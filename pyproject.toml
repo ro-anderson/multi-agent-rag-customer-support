@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "customer-support-chat"
+version = "0.1.0"
+description = "Customer Support Chat Application"
+authors = ["Your Name <your.email@example.com>"]
+package-mode = false
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+langgraph = "^0.2.19"
+python-dotenv = "^1.0.1"
+langchain-openai = "^0.1.23"
+ipython = "^8.27.0"
+duckduckgo-search = "^6.2.11"
+langchain-community = "^0.2.16"
+langchain-google-community = "^1.0.8"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

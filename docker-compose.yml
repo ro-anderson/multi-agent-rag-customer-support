@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  customer-support-chat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - app-network
+
+networks:
+  app-network:
