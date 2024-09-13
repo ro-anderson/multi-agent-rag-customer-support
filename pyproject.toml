@@ -15,6 +15,8 @@ ipython = "^8.27.0"
 duckduckgo-search = "^6.2.11"
 langchain-community = "^0.2.16"
 langchain-google-community = "^1.0.8"
+qdrant-client = "^1.11.1"
+pandas = "^2.2.2"
 
 [build-system]
 requires = ["poetry-core"]

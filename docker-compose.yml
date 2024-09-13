@@ -1,6 +1,15 @@
 version: '3.8'
 
 services:
+  qdrant:
+    image: qdrant/qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - ./customer_support_chat/data/qdrant_storage:/qdrant/storage
+    networks:
+      - app-network
+
   customer-support-chat:
     build:
       context: .
@@ -11,6 +20,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     networks:
       - app-network
+    depends_on:
+      - qdrant
 
 networks:
   app-network:
