@@ -1,4 +1,3 @@
-# customer_support_chat/app/services/tools/lookup.py
 import re
 import numpy as np
 import requests
@@ -9,6 +8,7 @@ from openai import OpenAI
 from qdrant_client.http.models import Distance, VectorParams, PointStruct
 import logging
 import uuid
+from tqdm import tqdm
 
 # Add this near the top of the file, after imports
 logger = logging.getLogger(__name__)
@@ -34,26 +34,32 @@ class VectorStoreRetriever:
         try:
             self.qdrant_client.get_collection(collection_name=self.collection_name)
             print(f"Collection '{self.collection_name}' already exists.")
+            if eval(settings.RECREATE_COLLECTIONS):
+                print(f"Recreating collection '{self.collection_name}'.")
+                self.qdrant_client.recreate_collection(
+                    collection_name=self.collection_name,
+                    vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+                )
+                self.index_docs(docs)
         except Exception:
+            print(f"Creating new collection '{self.collection_name}'.")
             self.qdrant_client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
             )
-            print(f"Created new collection '{self.collection_name}'.")
-        
-        # Always index docs, whether the collection is new or existing
-        self.index_docs(docs)
+            self.index_docs(docs)
 
     def index_docs(self, docs):
         vectors = self.generate_embeddings([doc["page_content"] for doc in docs])
-        points = [
-            PointStruct(
-                id=str(uuid.uuid4()),  # Generate a UUID for each point
-                vector=vector,
-                payload={"page_content": doc["page_content"]},
+        points = []
+        for vector, doc in tqdm(zip(vectors, docs), desc="Indexing FAQ documents", total=len(docs)):
+            points.append(
+                PointStruct(
+                    id=str(uuid.uuid4()),  # Generate a UUID for each point
+                    vector=vector,
+                    payload={"page_content": doc["page_content"]},
+                )
             )
-            for vector, doc in zip(vectors, docs)
-        ]
         self.qdrant_client.upsert(
             collection_name=self.collection_name,
             points=points,
