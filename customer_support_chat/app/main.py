@@ -1,5 +1,3 @@
-# customer_support_chat/app/main.py
-
 import uuid
 from customer_support_chat.app.graph import part_1_graph, builder, memory
 from customer_support_chat.app.services.utils import download_and_prepare_db
@@ -17,7 +15,7 @@ def main():
     # Configuration with passenger_id and thread_id
     config = {
         "configurable": {
-            "passenger_id": "3442 587242",
+            "passenger_id": "4756 900704",
             "thread_id": thread_id,
         }
     }

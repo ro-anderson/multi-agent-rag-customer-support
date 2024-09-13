@@ -1,5 +1,3 @@
-# customer_support_chat/app/services/tools/flights.py
-
 import sqlite3
 from datetime import datetime, date
 from typing import Optional, Union, List, Dict
@@ -11,6 +9,7 @@ from customer_support_chat.app.services.utils import get_qdrant_client
 from customer_support_chat.app.services.vectordb.chunkenizer import recursive_character_splitting
 from openai import OpenAI
 from qdrant_client.http.models import Distance, VectorParams, PointStruct
+from tqdm import tqdm
 import uuid
 
 settings = get_settings()
@@ -25,23 +24,30 @@ def create_and_index_flights_collection():
     try:
         qdrant_client.get_collection(collection_name=flights_collection)
         print(f"Collection '{flights_collection}' already exists.")
+        if eval(settings.RECREATE_COLLECTIONS):
+            print(f"Recreating collection '{flights_collection}'.")
+            qdrant_client.recreate_collection(
+                collection_name=flights_collection,
+                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+            )
+            index_flights_data()
     except Exception:
+        print(f"Creating new collection '{flights_collection}'")
         qdrant_client.create_collection(
             collection_name=flights_collection,
             vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
         )
-        print(f"Created new collection '{flights_collection}'.")
-    index_flights_data()
+        index_flights_data()
 
 def index_flights_data():
     conn = sqlite3.connect(db)
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM flights LIMIT 10")
+    cursor.execute(f"SELECT * FROM flights LIMIT {settings.LIMIT_ROWS}")
     rows = cursor.fetchall()
     column_names = [column[0] for column in cursor.description]
 
     points = []
-    for row in rows:
+    for row in tqdm(rows, desc="Indexing flights"):
         flight_data = dict(zip(column_names, row))
         content = f"Flight {flight_data['flight_no']} from {flight_data['departure_airport']} to {flight_data['arrival_airport']} departs at {flight_data['scheduled_departure']} and arrives at {flight_data['scheduled_arrival']}."
         chunks = recursive_character_splitting(content)

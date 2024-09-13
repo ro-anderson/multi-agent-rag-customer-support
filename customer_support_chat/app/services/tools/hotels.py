@@ -1,4 +1,3 @@
-# customer_support_chat/app/services/tools/hotels.py
 
 import sqlite3
 from datetime import datetime, date
@@ -9,6 +8,7 @@ from customer_support_chat.app.services.utils import get_qdrant_client
 from customer_support_chat.app.services.vectordb.chunkenizer import recursive_character_splitting
 from openai import OpenAI
 from qdrant_client.http.models import Distance, VectorParams, PointStruct
+from tqdm import tqdm
 import uuid
 
 settings = get_settings()
@@ -22,23 +22,30 @@ def create_and_index_hotels_collection():
     try:
         qdrant_client.get_collection(collection_name=hotels_collection)
         print(f"Collection '{hotels_collection}' already exists.")
+        if eval(settings.RECREATE_COLLECTIONS):
+            print(f"Recreating collection '{hotels_collection}'.")
+            qdrant_client.recreate_collection(
+                collection_name=hotels_collection,
+                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+            )
+            index_hotels_data()
     except Exception:
+        print(f"Creating new collection '{hotels_collection}'.")
         qdrant_client.create_collection(
             collection_name=hotels_collection,
             vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
         )
-        print(f"Created new collection '{hotels_collection}'.")
-    index_hotels_data()
+        index_hotels_data()
 
 def index_hotels_data():
     conn = sqlite3.connect(db)
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM hotels LIMIT 10")
+    cursor.execute(f"SELECT * FROM hotels LIMIT {settings.LIMIT_ROWS}")
     rows = cursor.fetchall()
     column_names = [column[0] for column in cursor.description]
 
     points = []
-    for row in rows:
+    for row in tqdm(rows, desc="Indexing hotels"):
         hotel_data = dict(zip(column_names, row))
         content = f"Hotel {hotel_data['name']} located at {hotel_data['location']}, price tier {hotel_data['price_tier']}."
         chunks = recursive_character_splitting(content)

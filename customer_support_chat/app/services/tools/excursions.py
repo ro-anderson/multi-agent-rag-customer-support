@@ -1,5 +1,3 @@
-# customer_support_chat/app/services/tools/excursions.py
-
 import sqlite3
 from typing import Optional, List, Dict
 from langchain_core.tools import tool
@@ -10,6 +8,7 @@ import openai
 from qdrant_client.http.models import Distance, VectorParams, PointStruct
 from openai import OpenAI
 import uuid
+from tqdm import tqdm
 settings = get_settings()
 db = settings.SQLITE_DB_PATH
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -21,23 +20,30 @@ def create_and_index_excursions_collection():
     try:
         qdrant_client.get_collection(collection_name=excursions_collection)
         print(f"Collection '{excursions_collection}' already exists.")
+        if eval(settings.RECREATE_COLLECTIONS):
+            print(f"Recreating collection '{excursions_collection}'.")
+            qdrant_client.recreate_collection(
+                collection_name=excursions_collection,
+                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+            )
+            index_excursions_data()
     except Exception:
-        qdrant_client.recreate_collection(
+        print(f"Creating new collection '{excursions_collection}'.")
+        qdrant_client.create_collection(
             collection_name=excursions_collection,
             vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
         )
-        print(f"Created new collection '{excursions_collection}'.")
         index_excursions_data()
 
 def index_excursions_data():
     conn = sqlite3.connect(db)
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM trip_recommendations limit 10")
+    cursor = conn.cursor() 
+    cursor.execute(f"SELECT * FROM trip_recommendations LIMIT {settings.LIMIT_ROWS}")
     rows = cursor.fetchall()
     column_names = [column[0] for column in cursor.description]
 
     points = []
-    for row in rows:
+    for row in tqdm(rows, desc="Indexing excursions"):
         excursion_data = dict(zip(column_names, row))
         content = f"Excursion {excursion_data['name']} at {excursion_data['location']} with keywords {excursion_data['keywords']}."
         chunks = recursive_character_splitting(content)
