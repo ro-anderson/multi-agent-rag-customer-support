@@ -17,6 +17,9 @@ langchain-community = "^0.2.16"
 langchain-google-community = "^1.0.8"
 qdrant-client = "^1.11.1"
 pandas = "^2.2.2"
+aiohttp = "^3.10.5"
+tqdm = "^4.66.5"
+more-itertools = "^10.5.0"
 
 [build-system]
 requires = ["poetry-core"]
