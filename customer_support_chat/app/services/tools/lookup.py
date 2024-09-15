@@ -1,105 +1,41 @@
-import re
-import numpy as np
-import requests
-from langchain_core.tools import tool
+from vectorizer.app.vectordb.vectordb import VectorDB
 from customer_support_chat.app.core.settings import get_settings
-from customer_support_chat.app.services.utils import get_qdrant_client
-from openai import OpenAI
-from qdrant_client.http.models import Distance, VectorParams, PointStruct
+from langchain_core.tools import tool
 import logging
-import uuid
-from tqdm import tqdm
+from typing import List, Dict
 
-# Add this near the top of the file, after imports
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
+faq_vectordb = VectorDB(table_name="faq", collection_name="faq_collection")
 
-faq_url = "https://storage.googleapis.com/benchmarks-artifacts/travel-db/swiss_faq.md"
-response = requests.get(faq_url)
-response.raise_for_status()
-faq_text = response.text
+@tool
+def search_faq(
+    query: str,
+    limit: int = 5,
+) -> List[Dict]:
+    """Search for FAQ entries based on a natural language query."""
+    search_results = faq_vectordb.search(query, limit=limit)
 
-docs = [{"page_content": txt} for txt in re.split(r"(?=\n##)", faq_text)]
-
-class VectorStoreRetriever:
-    def __init__(self, qdrant_client, openai_client, collection_name="faq_collection"):
-        self.qdrant_client = qdrant_client
-        self.openai_client = openai_client
-        self.collection_name = collection_name
-        self.create_collection()
-
-    def create_collection(self):
-        try:
-            self.qdrant_client.get_collection(collection_name=self.collection_name)
-            print(f"Collection '{self.collection_name}' already exists.")
-            if eval(settings.RECREATE_COLLECTIONS):
-                print(f"Recreating collection '{self.collection_name}'.")
-                self.qdrant_client.recreate_collection(
-                    collection_name=self.collection_name,
-                    vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-                )
-                self.index_docs(docs)
-        except Exception:
-            print(f"Creating new collection '{self.collection_name}'.")
-            self.qdrant_client.create_collection(
-                collection_name=self.collection_name,
-                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-            )
-            self.index_docs(docs)
-
-    def index_docs(self, docs):
-        vectors = self.generate_embeddings([doc["page_content"] for doc in docs])
-        points = []
-        for vector, doc in tqdm(zip(vectors, docs), desc="Indexing FAQ documents", total=len(docs)):
-            points.append(
-                PointStruct(
-                    id=str(uuid.uuid4()),  # Generate a UUID for each point
-                    vector=vector,
-                    payload={"page_content": doc["page_content"]},
-                )
-            )
-        self.qdrant_client.upsert(
-            collection_name=self.collection_name,
-            points=points,
-        )
-        print(f"Indexed {len(points)} documents into Qdrant.")
-
-    def generate_embeddings(self, texts):
-        embeddings = self.openai_client.embeddings.create(
-            model="text-embedding-ada-002", input=texts
-        )
-        vectors = [data.embedding for data in embeddings.data]
-        return vectors
-
-    def query(self, query: str, k: int = 5) -> list[dict]:
-        query_embedding = self.generate_embeddings([query])[0]
-        search_result = self.client.search(
-            collection_name=self.collection_name,
-            query_vector=query_embedding,
-            limit=k,
-            with_payload=True,
-        )
-        return [
-            {"page_content": hit.payload["page_content"], "similarity": hit.score}
-            for hit in search_result
-        ]
-
-# Initialize Qdrant client and retriever
-try:
-    qdrant_client = get_qdrant_client()
-    retriever = VectorStoreRetriever(qdrant_client=qdrant_client, openai_client=client)
-except Exception as e:
-    logger.error(f"Failed to initialize VectorStoreRetriever. Error: {str(e)}")
-    # You might want to provide a fallback mechanism here
-    retriever = None
+    faq_entries = []
+    for result in search_results:
+        payload = result.payload
+        faq_entries.append({
+            "question": payload["metadata"]["question"],
+            "answer": payload["metadata"]["answer"],
+            "category": payload["metadata"]["category"],
+            "chunk": payload["content"],
+            "similarity": result.score,
+        })
+    return faq_entries
 
 @tool
 def lookup_policy(query: str) -> str:
     """Consult the company policies to check whether certain options are permitted.
-    Use this before making any flight changes performing other 'write' events."""
-    if retriever is None:
-        return "Sorry, I'm unable to access the policy database at the moment. Please try again later or contact support."
-    docs = retriever.query(query, k=2)
-    return "\n\n".join([doc["page_content"] for doc in docs])
+    Use this before making any flight changes or performing other 'write' events."""
+    faq_results = search_faq(query, limit=2)
+    if not faq_results:
+        return "Sorry, I couldn't find any relevant policy information. Please contact support for assistance."
+    
+    policy_info = "\n\n".join([f"Q: {entry['question']}\nA: {entry['answer']}" for entry in faq_results])
+    return f"Here's the relevant policy information:\n\n{policy_info}"
