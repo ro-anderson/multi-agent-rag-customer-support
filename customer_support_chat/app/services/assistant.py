@@ -32,7 +32,7 @@ class Assistant:
         return {"messages": result}
 
 llm = ChatOpenAI(
-    model="gpt-4",
+    model="gpt-4o-mini",
     openai_api_key=settings.OPENAI_API_KEY,
     temperature=1,
 )
@@ -58,6 +58,7 @@ part_1_tools = [
     fetch_user_flight_information,
     search_flights,
     lookup_policy,
+    search_faq,  # Add this line
     update_ticket_to_new_flight,
     cancel_ticket,
     search_car_rentals,
