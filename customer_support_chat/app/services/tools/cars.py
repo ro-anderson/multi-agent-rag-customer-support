@@ -22,13 +22,13 @@ def search_car_rentals(
     for result in search_results:
         payload = result.payload
         rentals.append({
-            "id": payload["metadata"]["id"],
-            "name": payload["metadata"]["name"],
-            "location": payload["metadata"]["location"],
-            "price_tier": payload["metadata"]["price_tier"],
-            "start_date": payload["metadata"]["start_date"],
-            "end_date": payload["metadata"]["end_date"],
-            "booked": payload["metadata"]["booked"],
+            "id": payload["id"],
+            "name": payload["name"],
+            "location": payload["location"],
+            "price_tier": payload["price_tier"],
+            "start_date": payload["start_date"],
+            "end_date": payload["end_date"],
+            "booked": payload["booked"],
             "chunk": payload["content"],
             "similarity": result.score,
         })

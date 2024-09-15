@@ -21,9 +21,9 @@ def search_faq(
     for result in search_results:
         payload = result.payload
         faq_entries.append({
-            "question": payload["metadata"]["question"],
-            "answer": payload["metadata"]["answer"],
-            "category": payload["metadata"]["category"],
+            "question": payload["question"],
+            "answer": payload["answer"],
+            "category": payload["category"],
             "chunk": payload["content"],
             "similarity": result.score,
         })

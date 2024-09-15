@@ -20,12 +20,12 @@ def search_trip_recommendations(
     for result in search_results:
         payload = result.payload
         recommendations.append({
-            "id": payload["metadata"]["id"],
-            "name": payload["metadata"]["name"],
-            "location": payload["metadata"]["location"],
-            "keywords": payload["metadata"]["keywords"],
-            "details": payload["metadata"]["details"],
-            "booked": payload["metadata"]["booked"],
+            "id": payload["id"],
+            "name": payload["name"],
+            "location": payload["location"],
+            "keywords": payload["keywords"],
+            "details": payload["details"],
+            "booked": payload["booked"],
             "chunk": payload["content"],
             "similarity": result.score,
         })

@@ -57,16 +57,16 @@ def search_flights(
     for result in search_results:
         payload = result.payload
         flights.append({
-            "flight_id": payload["metadata"]["flight_id"],
-            "flight_no": payload["metadata"]["flight_no"],
-            "departure_airport": payload["metadata"]["departure_airport"],
-            "arrival_airport": payload["metadata"]["arrival_airport"],
-            "scheduled_departure": payload["metadata"]["scheduled_departure"],
-            "scheduled_arrival": payload["metadata"]["scheduled_arrival"],
-            "status": payload["metadata"]["status"],
-            "aircraft_code": payload["metadata"]["aircraft_code"],
-            "actual_departure": payload["metadata"]["actual_departure"],
-            "actual_arrival": payload["metadata"]["actual_arrival"],
+            "flight_id": payload["flight_id"],
+            "flight_no": payload["flight_no"],
+            "departure_airport": payload["departure_airport"],
+            "arrival_airport": payload["arrival_airport"],
+            "scheduled_departure": payload["scheduled_departure"],
+            "scheduled_arrival": payload["scheduled_arrival"],
+            "status": payload["status"],
+            "aircraft_code": payload["aircraft_code"],
+            "actual_departure": payload["actual_departure"],
+            "actual_arrival": payload["actual_arrival"],
             "chunk": payload["content"],
             "similarity": result.score,
         })

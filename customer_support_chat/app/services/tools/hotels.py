@@ -21,13 +21,13 @@ def search_hotels(
     for result in search_results:
         payload = result.payload
         hotels.append({
-            "id": payload["metadata"]["id"],
-            "name": payload["metadata"]["name"],
-            "location": payload["metadata"]["location"],
-            "price_tier": payload["metadata"]["price_tier"],
-            "checkin_date": payload["metadata"]["checkin_date"],
-            "checkout_date": payload["metadata"]["checkout_date"],
-            "booked": payload["metadata"]["booked"],
+            "id": payload["id"],
+            "name": payload["name"],
+            "location": payload["location"],
+            "price_tier": payload["price_tier"],
+            "checkin_date": payload["checkin_date"],
+            "checkout_date": payload["checkout_date"],
+            "booked": payload["booked"],
             "chunk": payload["content"],
             "similarity": result.score,
         })
