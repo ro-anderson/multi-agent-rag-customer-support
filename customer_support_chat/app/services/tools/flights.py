@@ -11,6 +11,38 @@ settings = get_settings()
 db = settings.SQLITE_DB_PATH
 flights_vectordb = VectorDB(table_name="flights", collection_name="flights_collection")
 
+def fetch_user_flight_information_func(passenger_id: str) -> List[Dict]:
+    """Fetch all tickets for the user along with corresponding flight information and seat assignments."""
+    if not passenger_id:
+        raise ValueError("No passenger ID provided.")
+
+    conn = sqlite3.connect(db)
+    cursor = conn.cursor()
+
+    query = """
+    SELECT 
+        t.ticket_no, t.book_ref,
+        f.flight_id, f.flight_no, f.departure_airport, f.arrival_airport, f.scheduled_departure, f.scheduled_arrival,
+        bp.seat_no, tf.fare_conditions
+    FROM 
+        tickets t
+        JOIN ticket_flights tf ON t.ticket_no = tf.ticket_no
+        JOIN flights f ON tf.flight_id = f.flight_id
+        LEFT JOIN boarding_passes bp ON bp.ticket_no = t.ticket_no AND bp.flight_id = f.flight_id
+    WHERE 
+        t.passenger_id = ?
+    """
+    cursor.execute(query, (passenger_id,))
+    rows = cursor.fetchall()
+    column_names = [column[0] for column in cursor.description]
+    results = [dict(zip(column_names, row)) for row in rows]
+
+    cursor.close()
+    conn.close()
+
+    return results
+
+
 @tool
 def fetch_user_flight_information(*, config: RunnableConfig) -> List[Dict]:
     """Fetch all tickets for the user along with corresponding flight information and seat assignments."""

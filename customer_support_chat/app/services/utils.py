@@ -8,6 +8,7 @@ from customer_support_chat.app.core.settings import get_settings
 from customer_support_chat.app.core.logger import logger
 from qdrant_client import QdrantClient
 from customer_support_chat.app.core.settings import get_settings
+from typing import List, Dict
 
 settings = get_settings()
 
@@ -100,3 +101,15 @@ def get_qdrant_client():
     except Exception as e:
         logger.error(f"Failed to connect to Qdrant server at {settings.QDRANT_URL}. Error: {str(e)}")
         raise
+
+def flight_info_to_string(flight_info: List[Dict]) -> str:
+    info_lines = []
+    for flight in flight_info:
+        line = (
+            f"Flight {flight['flight_no']} from {flight['departure_airport']} "
+            f"to {flight['arrival_airport']} departs at {flight['scheduled_departure']} "
+            f"and arrives at {flight['scheduled_arrival']}. Seat: {flight['seat_no']}. "
+            f"Fare conditions: {flight['fare_conditions']}."
+        )
+        info_lines.append(line)
+    return "\n".join(info_lines)
