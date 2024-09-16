@@ -20,7 +20,8 @@ def create_collections():
             vectordb.create_embeddings()
             logger.info(f"Embedding generation and storage completed for {collection_name}")
         except Exception as e:
-            logger.error(f"An error occurred while processing {table_name}: {e}")
+            logger.error(f"An error occurred while processing {table_name}: {str(e)}")
+            logger.exception("Detailed error information:")
 
 if __name__ == "__main__":
     create_collections()
