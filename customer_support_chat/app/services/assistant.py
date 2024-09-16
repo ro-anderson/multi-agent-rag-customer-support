@@ -54,7 +54,7 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
 
 # Replace TavilySearchResults with DuckDuckGoSearchResults
 part_1_tools = [
-    DuckDuckGoSearchResults(max_results=2),
+    DuckDuckGoSearchResults(max_results=10),
     fetch_user_flight_information,
     search_flights,
     lookup_policy,
