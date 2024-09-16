@@ -1,8 +1,7 @@
 import uuid
-from customer_support_chat.app.graph import part_1_graph, builder, memory
+from customer_support_chat.app.graph import part_2_graph, memory
 from customer_support_chat.app.services.utils import download_and_prepare_db
 from customer_support_chat.app.core.logger import logger
-from IPython.display import Image, display
 import os
 
 def main():
@@ -22,11 +21,11 @@ def main():
 
     # Generate and save the graph visualization
     try:
-        graph_image = part_1_graph.get_graph().draw_mermaid_png()
+        graph_image = part_2_graph.get_graph().draw_mermaid_png()
         graphs_dir = "./graphs"
         if not os.path.exists(graphs_dir):
             os.makedirs(graphs_dir)
-        image_path = os.path.join(graphs_dir, "customer_support_chat_graph.png")
+        image_path = os.path.join(graphs_dir, "customer_support_chat_graph_with_user_confirmation.png")
         with open(image_path, "wb") as f:
             f.write(graph_image)
         print(f"Graph saved at {image_path}")
@@ -41,7 +40,7 @@ def main():
                 break
 
             # Process the user input through the graph
-            events = part_1_graph.stream(
+            events = part_2_graph.stream(
                 {"messages": [("user", user_input)]}, config, stream_mode="values"
             )
 
@@ -49,15 +48,45 @@ def main():
             printed_message_ids = set()
 
             for event in events:
-                message = event.get("messages")
-                if message:
-                    if isinstance(message, list):
-                        # Get the last message (assistant's response)
-                        message = message[-1]
+                messages = event.get("messages", [])
+                for message in messages:
                     if message.id not in printed_message_ids:
-                        # Use pretty_print to display the assistant's response
                         message.pretty_print()
                         printed_message_ids.add(message.id)
+
+            # Check for interrupts
+            snapshot = part_2_graph.get_state(config)
+            while snapshot.next:
+                # Interrupt occurred before tool execution
+                user_input = input(
+                    "Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changes.\n\n"
+                )
+                if user_input.strip().lower() == "y":
+                    # Continue execution
+                    result = part_2_graph.invoke(None, config)
+                else:
+                    # Provide feedback to the assistant
+                    tool_call_id = snapshot.state["messages"][-1].tool_calls[0]["id"]
+                    from langgraph.graph.message import ToolMessage  # Import here to avoid circular import
+                    result = part_2_graph.invoke(
+                        {
+                            "messages": [
+                                ToolMessage(
+                                    tool_call_id=tool_call_id,
+                                    content=f"API call denied by user. Reasoning: '{user_input}'. Continue assisting, accounting for the user's input.",
+                                )
+                            ]
+                        },
+                        config,
+                    )
+                # Process the result to display any new messages
+                messages = result.get("messages", [])
+                for message in messages:
+                    if message.id not in printed_message_ids:
+                        message.pretty_print()
+                        printed_message_ids.add(message.id)
+                # Update the snapshot
+                snapshot = part_2_graph.get_state(config)
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
