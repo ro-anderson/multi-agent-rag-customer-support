@@ -1,7 +1,8 @@
 import uuid
-from customer_support_chat.app.graph import part_2_graph, memory
+from customer_support_chat.app.graph import part_3_graph, memory
 from customer_support_chat.app.services.utils import download_and_prepare_db
 from customer_support_chat.app.core.logger import logger
+from langchain_core.messages import ToolMessage
 import os
 
 def main():
@@ -21,11 +22,11 @@ def main():
 
     # Generate and save the graph visualization
     try:
-        graph_image = part_2_graph.get_graph().draw_mermaid_png()
+        graph_image = part_3_graph.get_graph().draw_mermaid_png()
         graphs_dir = "./graphs"
         if not os.path.exists(graphs_dir):
             os.makedirs(graphs_dir)
-        image_path = os.path.join(graphs_dir, "customer_support_chat_graph_with_user_confirmation.png")
+        image_path = os.path.join(graphs_dir, "customer_support_chat_graph_with_sensitive_and_safe_tools.png")
         with open(image_path, "wb") as f:
             f.write(graph_image)
         print(f"Graph saved at {image_path}")
@@ -40,7 +41,7 @@ def main():
                 break
 
             # Process the user input through the graph
-            events = part_2_graph.stream(
+            events = part_3_graph.stream(
                 {"messages": [("user", user_input)]}, config, stream_mode="values"
             )
 
@@ -55,20 +56,21 @@ def main():
                         printed_message_ids.add(message.id)
 
             # Check for interrupts
-            snapshot = part_2_graph.get_state(config)
+            snapshot = part_3_graph.get_state(config)
             while snapshot.next:
-                # Interrupt occurred before tool execution
+                # Interrupt occurred before sensitive tool execution
                 user_input = input(
                     "Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changes.\n\n"
                 )
                 if user_input.strip().lower() == "y":
                     # Continue execution
-                    result = part_2_graph.invoke(None, config)
+                    result = part_3_graph.invoke(None, config)
                 else:
                     # Provide feedback to the assistant
-                    tool_call_id = snapshot.state["messages"][-1].tool_calls[0]["id"]
-                    from langgraph.graph.message import ToolMessage  # Import here to avoid circular import
-                    result = part_2_graph.invoke(
+                    tool_call_id = snapshot.value["messages"][-1].tool_calls[0]["id"]
+
+
+                    result = part_3_graph.invoke(
                         {
                             "messages": [
                                 ToolMessage(
@@ -86,7 +88,7 @@ def main():
                         message.pretty_print()
                         printed_message_ids.add(message.id)
                 # Update the snapshot
-                snapshot = part_2_graph.get_state(config)
+                snapshot = part_3_graph.get_state(config)
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
