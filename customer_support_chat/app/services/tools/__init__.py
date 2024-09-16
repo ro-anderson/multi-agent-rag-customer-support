@@ -1,6 +1,6 @@
 # customer_support_chat/app/services/tools/__init__.py
 
-from .lookup import lookup_policy
+from .lookup import lookup_policy, search_faq
 from .flights import (
     fetch_user_flight_information,
     search_flights,
@@ -28,6 +28,7 @@ from .excursions import (
 
 __all__ = [
     "lookup_policy",
+    "search_faq",
     "fetch_user_flight_information",
     "search_flights",
     "update_ticket_to_new_flight",

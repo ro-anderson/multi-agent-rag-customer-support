@@ -1,66 +1,14 @@
-import sqlite3
-from datetime import datetime, date
-from typing import Optional, Union, List, Dict
-from langchain_core.tools import tool
+from vectorizer.app.vectordb.vectordb import VectorDB
 from customer_support_chat.app.core.settings import get_settings
-from customer_support_chat.app.services.utils import get_qdrant_client
-from customer_support_chat.app.services.vectordb.chunkenizer import recursive_character_splitting
-from openai import OpenAI
-from qdrant_client.http.models import Distance, VectorParams, PointStruct
-import uuid
-from tqdm import tqdm
+from langchain_core.tools import tool
+import sqlite3
+from typing import List, Dict, Optional, Union
+from datetime import datetime, date
+
 settings = get_settings()
 db = settings.SQLITE_DB_PATH
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-qdrant_client = get_qdrant_client()
-cars_collection = "car_rentals_collection"
-
-def create_and_index_cars_collection():
-    try:
-        qdrant_client.get_collection(collection_name=cars_collection)
-        print(f"Collection '{cars_collection}' already exists.")
-        if eval(settings.RECREATE_COLLECTIONS):
-            print(f"Recreating collection '{cars_collection}'.")
-            qdrant_client.recreate_collection(
-                collection_name=cars_collection,
-                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-            )
-            index_cars_data()
-    except Exception:
-        print(f"Creating new collection '{cars_collection}'.")
-        qdrant_client.create_collection(
-            collection_name=cars_collection,
-            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-        )
-        index_cars_data()
-
-def index_cars_data():
-    conn = sqlite3.connect(db)
-    cursor = conn.cursor()
-    cursor.execute(f"SELECT * FROM car_rentals LIMIT {settings.LIMIT_ROWS}")
-    rows = cursor.fetchall()
-    column_names = [column[0] for column in cursor.description]
-
-    points = []
-    for row in tqdm(rows, desc="Indexing car rentals"):
-        car_data = dict(zip(column_names, row))
-        content = f"Car rental {car_data['name']} located at {car_data['location']}, price tier {car_data['price_tier']}."
-        chunks = recursive_character_splitting(content)
-        for i, chunk in enumerate(chunks):
-            embedding = client.embeddings.create(
-                model="text-embedding-ada-002", input=chunk
-            ).data[0].embedding
-            point_id = str(uuid.uuid4())
-            payload = {**car_data, "chunk": chunk}
-            points.append(PointStruct(id=point_id, vector=embedding, payload=payload))
-
-    qdrant_client.upsert(collection_name=cars_collection, points=points)
-    conn.close()
-    print("Indexed car rentals data into Qdrant.")
-
-# Initialize collection
-create_and_index_cars_collection()
+cars_vectordb = VectorDB(table_name="car_rentals", collection_name="car_rentals_collection")
 
 @tool
 def search_car_rentals(
@@ -68,16 +16,7 @@ def search_car_rentals(
     limit: int = 10,
 ) -> List[Dict]:
     """Search for car rentals based on a natural language query."""
-    query_embedding = client.embeddings.create(
-        model="text-embedding-ada-002", input=query
-    ).data[0].embedding
-
-    search_results = qdrant_client.search(
-        collection_name=cars_collection,
-        query_vector=query_embedding,
-        limit=limit,
-        with_payload=True,
-    )
+    search_results = cars_vectordb.search(query, limit=limit)
 
     rentals = []
     for result in search_results:
@@ -87,7 +26,10 @@ def search_car_rentals(
             "name": payload["name"],
             "location": payload["location"],
             "price_tier": payload["price_tier"],
-            "chunk": payload["chunk"],
+            "start_date": payload["start_date"],
+            "end_date": payload["end_date"],
+            "booked": payload["booked"],
+            "chunk": payload["content"],
             "similarity": result.score,
         })
     return rentals

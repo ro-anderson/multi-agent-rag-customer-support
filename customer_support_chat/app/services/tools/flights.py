@@ -1,70 +1,15 @@
-import sqlite3
-from datetime import datetime, date
-from typing import Optional, Union, List, Dict
-import pytz
+from vectorizer.app.vectordb.vectordb import VectorDB
+from customer_support_chat.app.core.settings import get_settings
 from langchain_core.tools import tool
 from langchain_core.runnables import RunnableConfig
-from customer_support_chat.app.core.settings import get_settings
-from customer_support_chat.app.services.utils import get_qdrant_client
-from customer_support_chat.app.services.vectordb.chunkenizer import recursive_character_splitting
-from openai import OpenAI
-from qdrant_client.http.models import Distance, VectorParams, PointStruct
-from tqdm import tqdm
-import uuid
+import sqlite3
+from typing import Optional, Union, List, Dict
+from datetime import datetime, date
+import pytz
 
 settings = get_settings()
 db = settings.SQLITE_DB_PATH
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
-
-# Initialize Qdrant client
-qdrant_client = get_qdrant_client()
-flights_collection = "flights_collection"
-
-def create_and_index_flights_collection():
-    try:
-        qdrant_client.get_collection(collection_name=flights_collection)
-        print(f"Collection '{flights_collection}' already exists.")
-        if eval(settings.RECREATE_COLLECTIONS):
-            print(f"Recreating collection '{flights_collection}'.")
-            qdrant_client.recreate_collection(
-                collection_name=flights_collection,
-                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-            )
-            index_flights_data()
-    except Exception:
-        print(f"Creating new collection '{flights_collection}'")
-        qdrant_client.create_collection(
-            collection_name=flights_collection,
-            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-        )
-        index_flights_data()
-
-def index_flights_data():
-    conn = sqlite3.connect(db)
-    cursor = conn.cursor()
-    cursor.execute(f"SELECT * FROM flights LIMIT {settings.LIMIT_ROWS}")
-    rows = cursor.fetchall()
-    column_names = [column[0] for column in cursor.description]
-
-    points = []
-    for row in tqdm(rows, desc="Indexing flights"):
-        flight_data = dict(zip(column_names, row))
-        content = f"Flight {flight_data['flight_no']} from {flight_data['departure_airport']} to {flight_data['arrival_airport']} departs at {flight_data['scheduled_departure']} and arrives at {flight_data['scheduled_arrival']}."
-        chunks = recursive_character_splitting(content)
-        for i, chunk in enumerate(chunks):
-            embedding = client.embeddings.create(
-                model="text-embedding-ada-002", input=chunk
-            ).data[0].embedding
-            point_id = str(uuid.uuid4())
-            payload = {**flight_data, "chunk": chunk}
-            points.append(PointStruct(id=point_id, vector=embedding, payload=payload))
-
-    qdrant_client.upsert(collection_name=flights_collection, points=points)
-    conn.close()
-    print("Indexed flights data into Qdrant.")
-
-# Initialize collection
-create_and_index_flights_collection()
+flights_vectordb = VectorDB(table_name="flights", collection_name="flights_collection")
 
 @tool
 def fetch_user_flight_information(*, config: RunnableConfig) -> List[Dict]:
@@ -106,16 +51,7 @@ def search_flights(
     limit: int = 20,
 ) -> List[Dict]:
     """Search for flights based on a natural language query."""
-    query_embedding = client.embeddings.create(
-        model="text-embedding-ada-002", input=query
-    ).data[0].embedding
-
-    search_results = qdrant_client.search(
-        collection_name=flights_collection,
-        query_vector=query_embedding,
-        limit=limit,
-        with_payload=True,
-    )
+    search_results = flights_vectordb.search(query, limit=limit)
 
     flights = []
     for result in search_results:
@@ -127,7 +63,11 @@ def search_flights(
             "arrival_airport": payload["arrival_airport"],
             "scheduled_departure": payload["scheduled_departure"],
             "scheduled_arrival": payload["scheduled_arrival"],
-            "chunk": payload["chunk"],
+            "status": payload["status"],
+            "aircraft_code": payload["aircraft_code"],
+            "actual_departure": payload["actual_departure"],
+            "actual_arrival": payload["actual_arrival"],
+            "chunk": payload["content"],
             "similarity": result.score,
         })
     return flights

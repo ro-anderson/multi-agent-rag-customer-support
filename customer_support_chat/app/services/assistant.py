@@ -32,7 +32,7 @@ class Assistant:
         return {"messages": result}
 
 llm = ChatOpenAI(
-    model="gpt-4",
+    model="gpt-4o-mini",
     openai_api_key=settings.OPENAI_API_KEY,
     temperature=1,
 )
@@ -54,10 +54,11 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
 
 # Replace TavilySearchResults with DuckDuckGoSearchResults
 part_1_tools = [
-    DuckDuckGoSearchResults(max_results=2),
+    DuckDuckGoSearchResults(max_results=10),
     fetch_user_flight_information,
     search_flights,
     lookup_policy,
+    search_faq,  # Add this line
     update_ticket_to_new_flight,
     cancel_ticket,
     search_car_rentals,
