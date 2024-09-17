@@ -1,13 +1,32 @@
+# main.py
+
 import uuid
-from customer_support_chat.app.graph import part_3_graph, memory
+import os  # Import os module for file operations
+from customer_support_chat.app.graph import part_4_graph
 from customer_support_chat.app.services.utils import download_and_prepare_db
 from customer_support_chat.app.core.logger import logger
-from langchain_core.messages import ToolMessage
-import os
+from langchain_core.messages import ToolMessage, HumanMessage, AIMessage
 
 def main():
     # Ensure the database is downloaded and prepared
     download_and_prepare_db()
+
+    # Generate and save the graph visualization
+    try:
+        # Generate the graph object with xray=True to include node details
+        graph = part_4_graph.get_graph(xray=True)
+        # Draw the graph as a PNG image using Mermaid
+        graph_image = graph.draw_mermaid_png()
+        graphs_dir = "./graphs"
+        if not os.path.exists(graphs_dir):
+            os.makedirs(graphs_dir)
+        image_path = os.path.join(graphs_dir, "customer_support_chat_graph_part_4.png")
+        with open(image_path, "wb") as f:
+            f.write(graph_image)
+        print(f"Graph saved at {image_path}")
+    except Exception as e:
+        logger.error(f"An error occurred while generating the graph visualization: {e}")
+        print("Graph visualization could not be generated. Continuing without it.")
 
     # Generate a unique thread ID for the session
     thread_id = str(uuid.uuid4())
@@ -15,23 +34,13 @@ def main():
     # Configuration with passenger_id and thread_id
     config = {
         "configurable": {
-            "passenger_id": "8149 604011",
+            "passenger_id": "8149 604011",  # Update with a valid passenger ID as needed
             "thread_id": thread_id,
         }
     }
 
-    # Generate and save the graph visualization
-    try:
-        graph_image = part_3_graph.get_graph().draw_mermaid_png()
-        graphs_dir = "./graphs"
-        if not os.path.exists(graphs_dir):
-            os.makedirs(graphs_dir)
-        image_path = os.path.join(graphs_dir, "customer_support_chat_graph_with_sensitive_and_safe_tools.png")
-        with open(image_path, "wb") as f:
-            f.write(graph_image)
-        print(f"Graph saved at {image_path}")
-    except Exception as e:
-        logger.error(f"An error occurred while generating or saving the graph: {e}")
+    # Variable to track printed message IDs to avoid duplicates
+    printed_message_ids = set()
 
     try:
         while True:
@@ -41,36 +50,38 @@ def main():
                 break
 
             # Process the user input through the graph
-            events = part_3_graph.stream(
+            events = part_4_graph.stream(
                 {"messages": [("user", user_input)]}, config, stream_mode="values"
             )
 
-            # Variable to track printed message IDs to avoid duplicates
-            printed_message_ids = set()
-
+            
             for event in events:
                 messages = event.get("messages", [])
                 for message in messages:
                     if message.id not in printed_message_ids:
-                        message.pretty_print()
+                        # Check the message type to print the role
+                        if isinstance(message, HumanMessage):
+                            print(f"User: {message.content}")
+                        elif isinstance(message, AIMessage):
+                            print(f"Assistant: {message.content}")
+                        else:
+                            print(f"Unknown: {message.content}")
                         printed_message_ids.add(message.id)
 
             # Check for interrupts
-            snapshot = part_3_graph.get_state(config)
+            snapshot = part_4_graph.get_state(config)
             while snapshot.next:
                 # Interrupt occurred before sensitive tool execution
                 user_input = input(
-                    "Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changes.\n\n"
+                    "\nDo you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changes.\n\n"
                 )
                 if user_input.strip().lower() == "y":
                     # Continue execution
-                    result = part_3_graph.invoke(None, config)
+                    result = part_4_graph.invoke(None, config)
                 else:
                     # Provide feedback to the assistant
                     tool_call_id = snapshot.value["messages"][-1].tool_calls[0]["id"]
-
-
-                    result = part_3_graph.invoke(
+                    result = part_4_graph.invoke(
                         {
                             "messages": [
                                 ToolMessage(
@@ -85,13 +96,20 @@ def main():
                 messages = result.get("messages", [])
                 for message in messages:
                     if message.id not in printed_message_ids:
-                        message.pretty_print()
-                        printed_message_ids.add(message.id)
+                        # Check the message type to print the role
+                        if isinstance(message, HumanMessage):
+                            print(f"User: {message.content}")
+                        elif isinstance(message, AIMessage):
+                            print(f"Assistant: {message.content}")
+                        else:
+                            print(f"Unknown: {message.content}")
+                        printed_message_ids.add(message.id) 
                 # Update the snapshot
-                snapshot = part_3_graph.get_state(config)
+                snapshot = part_4_graph.get_state(config)
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
+        print("An unexpected error occurred. Please check the logs for more details.")
 
 if __name__ == "__main__":
     main()
