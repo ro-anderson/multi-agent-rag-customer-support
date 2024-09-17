@@ -297,7 +297,7 @@ interrupt_nodes = [
 ]
 
 memory = MemorySaver()
-part_4_graph = builder.compile(
+multi_agentic_graph = builder.compile(
     checkpointer=memory,
     interrupt_before=interrupt_nodes,
 )

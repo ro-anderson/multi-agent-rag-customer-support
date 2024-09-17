@@ -2,7 +2,7 @@
 
 import uuid
 import os  # Import os module for file operations
-from customer_support_chat.app.graph import part_4_graph
+from customer_support_chat.app.graph import multi_agentic_graph
 from customer_support_chat.app.services.utils import download_and_prepare_db
 from customer_support_chat.app.core.logger import logger
 from langchain_core.messages import ToolMessage, HumanMessage, AIMessage
@@ -14,13 +14,13 @@ def main():
     # Generate and save the graph visualization
     try:
         # Generate the graph object with xray=True to include node details
-        graph = part_4_graph.get_graph(xray=True)
+        graph = multi_agentic_graph.get_graph(xray=True)
         # Draw the graph as a PNG image using Mermaid
         graph_image = graph.draw_mermaid_png()
         graphs_dir = "./graphs"
         if not os.path.exists(graphs_dir):
             os.makedirs(graphs_dir)
-        image_path = os.path.join(graphs_dir, "customer_support_chat_graph_part_4.png")
+        image_path = os.path.join(graphs_dir, "customer_support_chat_graph_multi_agentic.png")
         with open(image_path, "wb") as f:
             f.write(graph_image)
         print(f"Graph saved at {image_path}")
@@ -50,7 +50,7 @@ def main():
                 break
 
             # Process the user input through the graph
-            events = part_4_graph.stream(
+            events = multi_agentic_graph.stream(
                 {"messages": [("user", user_input)]}, config, stream_mode="values"
             )
 
@@ -69,7 +69,7 @@ def main():
                         printed_message_ids.add(message.id)
 
             # Check for interrupts
-            snapshot = part_4_graph.get_state(config)
+            snapshot = multi_agentic_graph.get_state(config)
             while snapshot.next:
                 # Interrupt occurred before sensitive tool execution
                 user_input = input(
@@ -77,11 +77,11 @@ def main():
                 )
                 if user_input.strip().lower() == "y":
                     # Continue execution
-                    result = part_4_graph.invoke(None, config)
+                    result = multi_agentic_graph.invoke(None, config)
                 else:
                     # Provide feedback to the assistant
                     tool_call_id = snapshot.value["messages"][-1].tool_calls[0]["id"]
-                    result = part_4_graph.invoke(
+                    result = multi_agentic_graph.invoke(
                         {
                             "messages": [
                                 ToolMessage(
@@ -104,8 +104,9 @@ def main():
                         else:
                             print(f"Unknown: {message.content}")
                         printed_message_ids.add(message.id) 
+                        
                 # Update the snapshot
-                snapshot = part_4_graph.get_state(config)
+                snapshot = multi_agentic_graph.get_state(config)
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
