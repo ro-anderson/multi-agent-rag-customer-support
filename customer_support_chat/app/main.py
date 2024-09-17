@@ -54,18 +54,11 @@ def main():
                 {"messages": [("user", user_input)]}, config, stream_mode="values"
             )
 
-            
             for event in events:
                 messages = event.get("messages", [])
                 for message in messages:
                     if message.id not in printed_message_ids:
-                        # Check the message type to print the role
-                        if isinstance(message, HumanMessage):
-                            print(f"User: {message.content}")
-                        elif isinstance(message, AIMessage):
-                            print(f"Assistant: {message.content}")
-                        else:
-                            print(f"Unknown: {message.content}")
+                        message.pretty_print()
                         printed_message_ids.add(message.id)
 
             # Check for interrupts
@@ -96,13 +89,7 @@ def main():
                 messages = result.get("messages", [])
                 for message in messages:
                     if message.id not in printed_message_ids:
-                        # Check the message type to print the role
-                        if isinstance(message, HumanMessage):
-                            print(f"User: {message.content}")
-                        elif isinstance(message, AIMessage):
-                            print(f"Assistant: {message.content}")
-                        else:
-                            print(f"Unknown: {message.content}")
+                        message.pretty_print()
                         printed_message_ids.add(message.id) 
                         
                 # Update the snapshot
