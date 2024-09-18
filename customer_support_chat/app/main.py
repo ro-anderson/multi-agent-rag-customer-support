@@ -20,7 +20,7 @@ def main():
         graphs_dir = "./graphs"
         if not os.path.exists(graphs_dir):
             os.makedirs(graphs_dir)
-        image_path = os.path.join(graphs_dir, "customer_support_chat_graph_multi_agentic.png")
+        image_path = os.path.join(graphs_dir, "multi-agent-rag-system-graph.png")
         with open(image_path, "wb") as f:
             f.write(graph_image)
         print(f"Graph saved at {image_path}")
