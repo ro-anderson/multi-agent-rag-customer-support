@@ -80,7 +80,7 @@ def fetch_user_flight_information(*, config: RunnableConfig) -> List[Dict]:
 @tool
 def search_flights(
     query: str,
-    limit: int = 20,
+    limit: int = 2,
 ) -> List[Dict]:
     """Search for flights based on a natural language query."""
     search_results = flights_vectordb.search(query, limit=limit)

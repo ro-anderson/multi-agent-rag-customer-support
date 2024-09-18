@@ -13,7 +13,7 @@ cars_vectordb = VectorDB(table_name="car_rentals", collection_name="car_rentals_
 @tool
 def search_car_rentals(
     query: str,
-    limit: int = 10,
+    limit: int = 2,
 ) -> List[Dict]:
     """Search for car rentals based on a natural language query."""
     search_results = cars_vectordb.search(query, limit=limit)

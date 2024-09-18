@@ -189,7 +189,7 @@ class VectorDB:
     def create_embeddings(self):
         asyncio.run(self.create_embeddings_async())
 
-    def search(self, query, limit=5, with_payload=True):
+    def search(self, query, limit=2, with_payload=True):
         query_vector = generate_embedding(query)
         search_result = self.client.search(
             collection_name=self.collection_name,

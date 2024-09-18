@@ -12,7 +12,7 @@ hotels_vectordb = VectorDB(table_name="hotels", collection_name="hotels_collecti
 @tool
 def search_hotels(
     query: str,
-    limit: int = 10,
+    limit: int = 2,
 ) -> List[Dict]:
     """Search for hotels based on a natural language query."""
     search_results = hotels_vectordb.search(query, limit=limit)

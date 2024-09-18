@@ -12,7 +12,7 @@ faq_vectordb = VectorDB(table_name="faq", collection_name="faq_collection")
 @tool
 def search_faq(
     query: str,
-    limit: int = 5,
+    limit: int = 2,
 ) -> List[Dict]:
     """Search for FAQ entries based on a natural language query."""
     search_results = faq_vectordb.search(query, limit=limit)
