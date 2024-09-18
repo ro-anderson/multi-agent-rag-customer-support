@@ -30,7 +30,7 @@ The system is built using a multi-agent architecture, implemented as a state gra
 This architecture allows for a flexible and modular approach to handling diverse customer support scenarios, with built-in safety measures for sensitive operations.
 
 ## Observability in the Project
-To ensure effective monitoring and debugging capabilities, we have integrated LangSmith into this project for enhanced observability. LangSmith helps track the lifecycle of requests, including tool usage, agent responses, and errors, allowing developers to understand how the multi-agent system performs over time.
+To ensure effective monitoring and debugging capabilities, the project integrates LangSmith for enhanced observability. LangSmith helps track the lifecycle of requests, including tool usage, agent responses, and errors, allowing developers to understand how the multi-agent system performs over time.
 ![LangSmith](./images/langsmith.gif)
 ## Suggested Architecture on AWS
 
@@ -157,7 +157,7 @@ A vector database used to store and query the embeddings of the travel database.
 
 
 ## Next Steps on the Multi-Agentic RAG System
-To continue improving the Multi-Agentic RAG System, we can focus on several areas directly related to enhancing the current architecture:
+To continue improving the Multi-Agentic RAG System, here are some areas directly related to enhancing the current architecture:
 
 ```Refining the Tools:```
 A lot of opportunities to improve the existing tools with advanced RAG techniques:
