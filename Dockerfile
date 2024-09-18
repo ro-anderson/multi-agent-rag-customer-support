@@ -1,5 +1,3 @@
-# Dockerfile
-
 # Base image
 FROM python:3.12-slim
 
@@ -25,13 +23,14 @@ RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction --no-ansi --no-root
 
 # Copy application code
-COPY . /app
+COPY customer_support_chat /app/customer_support_chat
+COPY vectorizer /app/vectorizer
 
 # Set environment variables
-ENV PYTHONPATH="/app/customer_support_chat/app"
+ENV PYTHONPATH="/app"
 
 # Expose port if running a server (adjust as needed)
 EXPOSE 8501
 
 # Default command
-CMD ["python", "customer_support_chat/app/main.py"]
+CMD ["python", "-m", "customer_support_chat.app.main"]
