@@ -128,9 +128,12 @@ def get_qdrant_client():
         raise
 
 def flight_info_to_string(flight_info: List[Dict]) -> str:
-    info_lines = []
+    info_lines = [] 
+    i = 0
     for flight in flight_info:
+        i += 1
         line = (
+            f"Ticket [{i}]:\n"
             f"Ticket Number: {flight['ticket_no']}\n"
             f"Booking Reference: {flight['book_ref']}\n"
             f"Flight ID: {flight['flight_id']}\n"
@@ -139,7 +142,10 @@ def flight_info_to_string(flight_info: List[Dict]) -> str:
             f"Arrival: {flight['arrival_airport']} at {flight['scheduled_arrival']}\n"
             f"Seat: {flight['seat_no']}\n"
             f"Fare Class: {flight['fare_conditions']}\n"
+            f"\n\n"
         )
         info_lines.append(line)
+
+    info_lines = f"User current booked flight(s) details:\n" + "\n".join(info_lines)
 
     return "\n".join(info_lines)
