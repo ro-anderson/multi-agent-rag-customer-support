@@ -8,4 +8,4 @@ FROM
     JOIN flights f ON tf.flight_id = f.flight_id
     LEFT JOIN boarding_passes bp ON bp.ticket_no = t.ticket_no AND bp.flight_id = f.flight_id
 WHERE 
-    t.passenger_id = '8149 604011'; 
+    t.passenger_id = '5102 899977'; 

@@ -34,7 +34,7 @@ def main():
     # Configuration with passenger_id and thread_id
     config = {
         "configurable": {
-            "passenger_id": "8149 604011",  # Update with a valid passenger ID as needed
+            "passenger_id": "5102 899977",  # Update with a valid passenger ID as needed
             "thread_id": thread_id,
         }
     }
