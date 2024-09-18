@@ -131,10 +131,15 @@ def flight_info_to_string(flight_info: List[Dict]) -> str:
     info_lines = []
     for flight in flight_info:
         line = (
-            f"Flight {flight['flight_no']} from {flight['departure_airport']} "
-            f"to {flight['arrival_airport']} departs at {flight['scheduled_departure']} "
-            f"and arrives at {flight['scheduled_arrival']}. Seat: {flight['seat_no']}. "
-            f"Fare conditions: {flight['fare_conditions']}."
+            f"Ticket Number: {flight['ticket_no']}\n"
+            f"Booking Reference: {flight['book_ref']}\n"
+            f"Flight ID: {flight['flight_id']}\n"
+            f"Flight Number: {flight['flight_no']}\n"
+            f"Departure: {flight['departure_airport']} at {flight['scheduled_departure']}\n"
+            f"Arrival: {flight['arrival_airport']} at {flight['scheduled_arrival']}\n"
+            f"Seat: {flight['seat_no']}\n"
+            f"Fare Class: {flight['fare_conditions']}\n"
         )
         info_lines.append(line)
+
     return "\n".join(info_lines)
