@@ -4,12 +4,15 @@ from customer_support_chat.app.core.state import State
 from pydantic import BaseModel
 from customer_support_chat.app.core.settings import get_settings
 from langchain_openai import ChatOpenAI
+from customer_support_chat.connectors.vertex_ai_connector import VertexAIConnector
+from langchain_google_vertexai import ChatVertexAI
 
 settings = get_settings()
+vertex_ai_connector = VertexAIConnector()
 
 # Initialize the language model (shared among assistants)
-llm = ChatOpenAI(
-    model="gpt-4",
+llm = ChatVertexAI(
+    model="gemini-1.5-flash-001",
     openai_api_key=settings.OPENAI_API_KEY,
     temperature=1,
 )
