@@ -1,4 +1,4 @@
-from .assistant_base import Assistant, CompleteOrEscalate, llm
+from .assistant_base import CompleteOrEscalate, llm
 from .primary_assistant import (
     primary_assistant,
     primary_assistant_tools,

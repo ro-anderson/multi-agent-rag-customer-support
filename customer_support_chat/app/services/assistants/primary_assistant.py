@@ -1,8 +1,5 @@
 from datetime import datetime
 from langchain_core.prompts import ChatPromptTemplate
-from customer_support_chat.app.services.tools import (
-    lookup_policy,
-)
 from langchain_community.tools.ddg_search.tool import DuckDuckGoSearchResults
 from customer_support_chat.app.services.assistants.assistant_base import Assistant, llm
 from customer_support_chat.app.core.state import State
@@ -51,7 +48,6 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
 # Primary assistant tools
 primary_assistant_tools = [
     DuckDuckGoSearchResults(max_results=10),
-    lookup_policy,
     ToSocialEngagementAssistant,
     ToTokenInfoAssistant,
     ToMarketInsightsAssistant,

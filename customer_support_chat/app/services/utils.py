@@ -1,12 +1,7 @@
-import os
-import shutil
-import sqlite3
 from datetime import datetime
 import pandas as pd
-import requests
 from customer_support_chat.app.core.settings import get_settings
 from customer_support_chat.app.core.logger import logger
-from qdrant_client import QdrantClient
 from customer_support_chat.app.core.settings import get_settings
 from typing import List, Dict, Callable
 
@@ -36,63 +31,6 @@ def create_entry_node(assistant_name: str, new_dialog_state: str) -> Callable:
         }
     return entry_node
 
-
-def download_and_prepare_db():
-    settings = get_settings()
-    db_file = settings.SQLITE_DB_PATH
-    db_dir = os.path.dirname(db_file)
-    if not os.path.exists(db_dir):
-        os.makedirs(db_dir)
-    db_url = "https://storage.googleapis.com/benchmarks-artifacts/travel-db/travel2.sqlite"
-    if not os.path.exists(db_file):
-        response = requests.get(db_url)
-        response.raise_for_status()
-        with open(db_file, "wb") as f:
-            f.write(response.content)
-        update_dates(db_file)
-
-def update_dates(db_file):
-    backup_file = db_file + '.backup'
-    if not os.path.exists(backup_file):
-        shutil.copy(db_file, backup_file)
-
-    conn = sqlite3.connect(db_file)
-
-    tables = pd.read_sql(
-        "SELECT name FROM sqlite_master WHERE type='table';", conn
-    ).name.tolist()
-    tdf = {}
-    for t in tables:
-        tdf[t] = pd.read_sql(f"SELECT * from {t}", conn)
-
-    example_time = pd.to_datetime(
-        tdf["flights"]["actual_departure"].replace("\\N", pd.NaT)
-    ).max()
-    current_time = pd.to_datetime("now").tz_localize(example_time.tz)
-    time_diff = current_time - example_time
-
-    tdf["bookings"]["book_date"] = (
-        pd.to_datetime(tdf["bookings"]["book_date"].replace("\\N", pd.NaT), utc=True)
-        + time_diff
-    )
-
-    datetime_columns = [
-        "scheduled_departure",
-        "scheduled_arrival",
-        "actual_departure",
-        "actual_arrival",
-    ]
-    for column in datetime_columns:
-        tdf["flights"][column] = (
-            pd.to_datetime(tdf["flights"][column].replace("\\N", pd.NaT)) + time_diff
-        )
-
-    for table_name, df in tdf.items():
-        df.to_sql(table_name, conn, if_exists="replace", index=False)
-
-    conn.commit()
-    conn.close()
-
 def handle_tool_error(state) -> dict:
     error = state.get("error")
     tool_calls = state["messages"][-1].tool_calls
@@ -116,36 +54,14 @@ def create_tool_node_with_fallback(tools: list):
         [RunnableLambda(handle_tool_error)], exception_key="error"
     )
 
-def get_qdrant_client():
-    settings = get_settings()
-    try:
-        client = QdrantClient(url=settings.QDRANT_URL)
-        # Test the connection
-        client.get_collections()
-        return client
-    except Exception as e:
-        logger.error(f"Failed to connect to Qdrant server at {settings.QDRANT_URL}. Error: {str(e)}")
-        raise
-
-def flight_info_to_string(flight_info: List[Dict]) -> str:
-    info_lines = [] 
-    i = 0
-    for flight in flight_info:
-        i += 1
-        line = (
-            f"Ticket [{i}]:\n"
-            f"Ticket Number: {flight['ticket_no']}\n"
-            f"Booking Reference: {flight['book_ref']}\n"
-            f"Flight ID: {flight['flight_id']}\n"
-            f"Flight Number: {flight['flight_no']}\n"
-            f"Departure: {flight['departure_airport']} at {flight['scheduled_departure']}\n"
-            f"Arrival: {flight['arrival_airport']} at {flight['scheduled_arrival']}\n"
-            f"Seat: {flight['seat_no']}\n"
-            f"Fare Class: {flight['fare_conditions']}\n"
-            f"\n\n"
-        )
+def token_info_to_string(token_info: List[str]) -> str:
+    info_lines = []
+    for i, token in enumerate(token_info, 1):
+        line = f"[{i}] {token}\n"
         info_lines.append(line)
 
-    info_lines = f"User current booked flight(s) details:\n" + "\n".join(info_lines)
-
-    return "\n".join(info_lines)
+    header = "User's previously searched tokens on SpectreAI:\n"
+    if not info_lines:
+        return header + "No tokens searched yet."
+    
+    return header + "".join(info_lines)

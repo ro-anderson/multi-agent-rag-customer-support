@@ -1,7 +1,6 @@
 from datetime import datetime
 from langchain_core.prompts import ChatPromptTemplate
 from customer_support_chat.app.services.tools.market_insights import (
-    search_market_insights,
     get_news,
 )
 from customer_support_chat.app.services.assistants.assistant_base import Assistant, CompleteOrEscalate, llm
@@ -25,7 +24,7 @@ market_insights_prompt = ChatPromptTemplate.from_messages(
 ).partial(time=datetime.now())
 
 # Market Insights tools
-market_insights_safe_tools = [search_market_insights, get_news]
+market_insights_safe_tools = [get_news]
 market_insights_sensitive_tools = []
 market_insights_tools = market_insights_safe_tools + market_insights_sensitive_tools
 

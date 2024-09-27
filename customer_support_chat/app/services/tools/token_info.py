@@ -1,11 +1,8 @@
-from vectorizer.app.vectordb.vectordb import VectorDB
 from customer_support_chat.app.core.settings import get_settings
 from langchain_core.tools import tool
 import requests
 
 settings = get_settings()
-
-token_info_vectordb = VectorDB(table_name="token_info", collection_name="token_info_collection")
 
 @tool
 def get_summary(ticker: str) -> dict:

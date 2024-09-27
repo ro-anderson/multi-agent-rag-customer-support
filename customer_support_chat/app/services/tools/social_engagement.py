@@ -1,50 +1,26 @@
-from vectorizer.app.vectordb.vectordb import VectorDB
 from customer_support_chat.app.core.settings import get_settings
 from langchain_core.tools import tool
 from langchain_core.runnables import RunnableConfig
-import sqlite3
-from typing import Optional, Union, List, Dict
-from datetime import datetime, date
+from typing import List
 import requests
 
 settings = get_settings()
-db = settings.SQLITE_DB_PATH
-flights_vectordb = VectorDB(table_name="flights", collection_name="flights_collection")
 
-
-@tool
-def fetch_user_flight_information(*, config: RunnableConfig) -> List[Dict]:
-    """Fetch all tickets for the user along with corresponding flight information and seat assignments."""
+def fetch_user_token_information(*, config: RunnableConfig) -> List[str]:
+    """Fetch all tokens for the user."""
     configuration = config.get("configurable", {})
-    passenger_id = configuration.get("passenger_id", None)
-    if not passenger_id:
-        raise ValueError("No passenger ID configured.")
+    user_email = configuration.get("user_email", None)
+    if not user_email:
+        raise ValueError("No user email configured.")
 
-    conn = sqlite3.connect(db)
-    cursor = conn.cursor()
-
-    query = """
-    SELECT 
-        t.ticket_no, t.book_ref,
-        f.flight_id, f.flight_no, f.departure_airport, f.arrival_airport, f.scheduled_departure, f.scheduled_arrival,
-        bp.seat_no, tf.fare_conditions
-    FROM 
-        tickets t
-        JOIN ticket_flights tf ON t.ticket_no = tf.ticket_no
-        JOIN flights f ON tf.flight_id = f.flight_id
-        LEFT JOIN boarding_passes bp ON bp.ticket_no = t.ticket_no AND bp.flight_id = f.flight_id
-    WHERE 
-        t.passenger_id = ?
-    """
-    cursor.execute(query, (passenger_id,))
-    rows = cursor.fetchall()
-    column_names = [column[0] for column in cursor.description]
-    results = [dict(zip(column_names, row)) for row in rows]
-
-    cursor.close()
-    conn.close()
-
-    return results
+    try:
+        response = requests.get("https://us-central1-third-opus-411016.cloudfunctions.net/SearchEngineApiV2/get_user_data")
+        response.raise_for_status()
+        user_data = response.json()
+        return user_data.get(user_email, [])
+    except requests.RequestException as e:
+        print(f"Error fetching user data: {e}")
+        return []
 
 @tool
 def get_engagement_sentiment_price(ticker: str) -> dict:

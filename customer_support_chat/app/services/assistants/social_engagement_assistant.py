@@ -2,7 +2,7 @@ from datetime import datetime
 from langchain_core.prompts import ChatPromptTemplate
 from customer_support_chat.app.services.tools.social_engagement import (
     get_engagement_sentiment_price,
-    fetch_user_flight_information
+    fetch_user_token_information
 )
 from customer_support_chat.app.services.assistants.assistant_base import Assistant, CompleteOrEscalate, llm
 import yaml
@@ -25,7 +25,7 @@ social_engagement_prompt = ChatPromptTemplate.from_messages(
 ).partial(time=datetime.now())
 
 # Social and Engagement tools
-social_engagement_safe_tools = [get_engagement_sentiment_price, fetch_user_flight_information]
+social_engagement_safe_tools = [get_engagement_sentiment_price, fetch_user_token_information]
 social_engagement_sensitive_tools = []
 social_engagement_tools = social_engagement_safe_tools + social_engagement_sensitive_tools
 

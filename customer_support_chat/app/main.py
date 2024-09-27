@@ -3,13 +3,10 @@
 import uuid
 import os  # Import os module for file operations
 from customer_support_chat.app.graph import multi_agentic_graph
-from customer_support_chat.app.services.utils import download_and_prepare_db
 from customer_support_chat.app.core.logger import logger
 from langchain_core.messages import ToolMessage, HumanMessage, AIMessage
 
 def main():
-    # Ensure the database is downloaded and prepared
-    download_and_prepare_db()
 
     # Generate and save the graph visualization
     try:
@@ -34,7 +31,7 @@ def main():
     # Configuration with passenger_id and thread_id
     config = {
         "configurable": {
-            "passenger_id": "5102 899977",  # Update with a valid passenger ID as needed
+            "user_email": "didier_rda_gmail_com", 
             "thread_id": thread_id,
         }
     }

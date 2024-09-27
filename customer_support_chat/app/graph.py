@@ -7,12 +7,11 @@ from langchain_core.runnables import RunnableConfig
 from customer_support_chat.app.core.state import State
 from customer_support_chat.app.services.utils import (
   create_tool_node_with_fallback,
-  flight_info_to_string,
   create_entry_node,
+  token_info_to_string
 )
-from customer_support_chat.app.services.tools.social_engagement import fetch_user_flight_information
+from customer_support_chat.app.services.tools.social_engagement import fetch_user_token_information
 from customer_support_chat.app.services.assistants.assistant_base import (
-  Assistant,
   CompleteOrEscalate,
   llm,
 )
@@ -49,9 +48,9 @@ from customer_support_chat.app.services.assistants.sentiment_analysis_assistant 
 builder = StateGraph(State)
 
 def user_info(state: State, config: RunnableConfig):
-  # Fetch user flight information
-  flight_info = fetch_user_flight_information.invoke(input={}, config=config)
-  user_info_str = flight_info_to_string(flight_info)
+  # Fetch user token information
+  user_tokens = fetch_user_token_information(config=config)
+  user_info_str = token_info_to_string(user_tokens)
   return {"user_info": user_info_str}
 
 builder.add_node("fetch_user_info", user_info)
