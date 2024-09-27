@@ -2,20 +2,10 @@ from .assistant_base import Assistant, CompleteOrEscalate, llm
 from .primary_assistant import (
     primary_assistant,
     primary_assistant_tools,
-    ToFlightBookingAssistant,
-    ToHotelBookingAssistant,
+    ToSocialEngagementAssistant,
     ToTokenInfoAssistant,
+    ToSentimentAnalysisAssistant,
     ToMarketInsightsAssistant,
-)
-from .flight_booking_assistant import (
-    flight_booking_assistant,
-    update_flight_safe_tools,
-    update_flight_sensitive_tools,
-)
-from .hotel_booking_assistant import (
-    hotel_booking_assistant,
-    book_hotel_safe_tools,
-    book_hotel_sensitive_tools,
 )
 from .market_insights_assistant import (
     market_insights_assistant,
@@ -26,4 +16,14 @@ from .token_info_assistant import (
     token_info_assistant,
     token_info_safe_tools,
     token_info_sensitive_tools,
+)
+from .sentiment_analysis_assistant import (
+    sentiment_analysis_assistant,
+    sentiment_analysis_safe_tools,
+    sentiment_analysis_sensitive_tools,
+)
+from .social_engagement_assistant import (
+    social_engagement_assistant,
+    social_engagement_safe_tools,
+    social_engagement_sensitive_tools,
 )
