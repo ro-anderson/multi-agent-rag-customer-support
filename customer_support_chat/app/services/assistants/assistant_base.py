@@ -12,9 +12,9 @@ vertex_ai_connector = VertexAIConnector()
 
 # Initialize the language model (shared among assistants)
 llm = ChatVertexAI(
-    model="gemini-1.5-flash-001",
+    model="gemini-1.5-pro",
     openai_api_key=settings.OPENAI_API_KEY,
-    temperature=1,
+    temperature=0,
 )
 
 class Assistant:
