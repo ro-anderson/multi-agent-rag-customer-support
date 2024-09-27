@@ -10,7 +10,7 @@ from customer_support_chat.app.services.utils import (
   flight_info_to_string,
   create_entry_node,
 )
-from customer_support_chat.app.services.tools.flights import fetch_user_flight_information
+from customer_support_chat.app.services.tools.social_engagement import fetch_user_flight_information
 from customer_support_chat.app.services.assistants.assistant_base import (
   Assistant,
   CompleteOrEscalate,
@@ -19,30 +19,30 @@ from customer_support_chat.app.services.assistants.assistant_base import (
 from customer_support_chat.app.services.assistants.primary_assistant import (
   primary_assistant,
   primary_assistant_tools,
-  ToFlightBookingAssistant,
-  ToHotelBookingAssistant,
+  ToSocialEngagementAssistant,
   ToTokenInfoAssistant,
   ToMarketInsightsAssistant,
+  ToSentimentAnalysisAssistant,
 )
-from customer_support_chat.app.services.assistants.flight_booking_assistant import (
-  flight_booking_assistant,
-  update_flight_safe_tools,
-  update_flight_sensitive_tools,
+from customer_support_chat.app.services.assistants.social_engagement_assistant import (
+  social_engagement_assistant,
+  social_engagement_safe_tools,
+  social_engagement_sensitive_tools,
 )
 from customer_support_chat.app.services.assistants.token_info_assistant import (
   token_info_assistant,
   token_info_safe_tools,
   token_info_sensitive_tools,
 )
-from customer_support_chat.app.services.assistants.hotel_booking_assistant import (
-  hotel_booking_assistant,
-  book_hotel_safe_tools,
-  book_hotel_sensitive_tools,
-)
 from customer_support_chat.app.services.assistants.market_insights_assistant import (
   market_insights_assistant,
   market_insights_safe_tools,
   market_insights_sensitive_tools,
+)
+from customer_support_chat.app.services.assistants.sentiment_analysis_assistant import (
+  sentiment_analysis_assistant,
+  sentiment_analysis_safe_tools,
+  sentiment_analysis_sensitive_tools,
 )
 
 # Initialize the graph
@@ -57,25 +57,25 @@ def user_info(state: State, config: RunnableConfig):
 builder.add_node("fetch_user_info", user_info)
 builder.add_edge(START, "fetch_user_info")
 
-# Flight Booking Assistant
+# Social and Engagement Assistant
 builder.add_node(
-  "enter_update_flight",
-  create_entry_node("Flight Updates & Booking Assistant", "update_flight"),
+  "enter_social_engagement",
+  create_entry_node("Social and Engagement Assistant", "social_engagement"),
 )
-builder.add_node("update_flight", flight_booking_assistant)
-builder.add_edge("enter_update_flight", "update_flight")
+builder.add_node("social_engagement", social_engagement_assistant)
+builder.add_edge("enter_social_engagement", "social_engagement")
 builder.add_node(
-  "update_flight_safe_tools",
-  create_tool_node_with_fallback(update_flight_safe_tools),
+  "social_engagement_safe_tools",
+  create_tool_node_with_fallback(social_engagement_safe_tools),
 )
 builder.add_node(
-  "update_flight_sensitive_tools",
-  create_tool_node_with_fallback(update_flight_sensitive_tools),
+  "social_engagement_sensitive_tools",
+  create_tool_node_with_fallback(social_engagement_sensitive_tools),
 )
 
-def route_update_flight(state: State) -> Literal[
-  "update_flight_safe_tools",
-  "update_flight_sensitive_tools",
+def route_social_engagement(state: State) -> Literal[
+  "social_engagement_safe_tools",
+  "social_engagement_sensitive_tools",
   "primary_assistant",
   "__end__",
 ]:
@@ -86,19 +86,19 @@ def route_update_flight(state: State) -> Literal[
   did_cancel = any(tc["name"] == CompleteOrEscalate.__name__ for tc in tool_calls)
   if did_cancel:
       return "primary_assistant"
-  safe_toolnames = [t.name for t in update_flight_safe_tools]
+  safe_toolnames = [t.name for t in social_engagement_safe_tools]
   if all(tc["name"] in safe_toolnames for tc in tool_calls):
-      return "update_flight_safe_tools"
-  return "update_flight_sensitive_tools"
+      return "social_engagement_safe_tools"
+  return "social_engagement_sensitive_tools"
 
-builder.add_edge("update_flight_safe_tools", "update_flight")
-builder.add_edge("update_flight_sensitive_tools", "update_flight")
-builder.add_conditional_edges("update_flight", route_update_flight)
+builder.add_edge("social_engagement_safe_tools", "social_engagement")
+builder.add_edge("social_engagement_sensitive_tools", "social_engagement")
+builder.add_conditional_edges("social_engagement", route_social_engagement)
 
 # Token Info Assistant
 builder.add_node(
   "enter_token_info",
-  create_entry_node("Token Information Assistant", "token_info"),
+  create_entry_node("Token Info Assistant", "token_info"),
 )
 builder.add_node("token_info", token_info_assistant)
 builder.add_edge("enter_token_info", "token_info")
@@ -132,44 +132,6 @@ def route_token_info(state: State) -> Literal[
 builder.add_edge("token_info_safe_tools", "token_info")
 builder.add_edge("token_info_sensitive_tools", "token_info")
 builder.add_conditional_edges("token_info", route_token_info)
-
-# Hotel Booking Assistant
-builder.add_node(
-  "enter_book_hotel",
-  create_entry_node("Hotel Booking Assistant", "book_hotel"),
-)
-builder.add_node("book_hotel", hotel_booking_assistant)
-builder.add_edge("enter_book_hotel", "book_hotel")
-builder.add_node(
-  "book_hotel_safe_tools",
-  create_tool_node_with_fallback(book_hotel_safe_tools),
-)
-builder.add_node(
-  "book_hotel_sensitive_tools",
-  create_tool_node_with_fallback(book_hotel_sensitive_tools),
-)
-
-def route_book_hotel(state: State) -> Literal[
-  "book_hotel_safe_tools",
-  "book_hotel_sensitive_tools",
-  "primary_assistant",
-  "__end__",
-]:
-  route = tools_condition(state)
-  if route == END:
-      return END
-  tool_calls = state["messages"][-1].tool_calls
-  did_cancel = any(tc["name"] == CompleteOrEscalate.__name__ for tc in tool_calls)
-  if did_cancel:
-      return "primary_assistant"
-  safe_toolnames = [t.name for t in book_hotel_safe_tools]
-  if all(tc["name"] in safe_toolnames for tc in tool_calls):
-      return "book_hotel_safe_tools"
-  return "book_hotel_sensitive_tools"
-
-builder.add_edge("book_hotel_safe_tools", "book_hotel")
-builder.add_edge("book_hotel_sensitive_tools", "book_hotel")
-builder.add_conditional_edges("book_hotel", route_book_hotel)
 
 # Market Insights Assistant
 builder.add_node(
@@ -209,6 +171,44 @@ builder.add_edge("market_insights_safe_tools", "market_insights")
 builder.add_edge("market_insights_sensitive_tools", "market_insights")
 builder.add_conditional_edges("market_insights", route_market_insights)
 
+# Sentiment Analysis Assistant
+builder.add_node(
+  "enter_sentiment_analysis",
+  create_entry_node("Sentiment Analysis Assistant", "sentiment_analysis"),
+)
+builder.add_node("sentiment_analysis", sentiment_analysis_assistant)
+builder.add_edge("enter_sentiment_analysis", "sentiment_analysis")
+builder.add_node(
+  "sentiment_analysis_safe_tools",
+  create_tool_node_with_fallback(sentiment_analysis_safe_tools),
+)
+builder.add_node(
+  "sentiment_analysis_sensitive_tools",
+  create_tool_node_with_fallback(sentiment_analysis_sensitive_tools),
+)
+
+def route_sentiment_analysis(state: State) -> Literal[
+  "sentiment_analysis_safe_tools",
+  "sentiment_analysis_sensitive_tools",
+  "primary_assistant",
+  "__end__",
+]:
+  route = tools_condition(state)
+  if route == END:
+      return END
+  tool_calls = state["messages"][-1].tool_calls
+  did_cancel = any(tc["name"] == CompleteOrEscalate.__name__ for tc in tool_calls)
+  if did_cancel:
+      return "primary_assistant"
+  safe_toolnames = [t.name for t in sentiment_analysis_safe_tools]
+  if all(tc["name"] in safe_toolnames for tc in tool_calls):
+      return "sentiment_analysis_safe_tools"
+  return "sentiment_analysis_sensitive_tools"
+
+builder.add_edge("sentiment_analysis_safe_tools", "sentiment_analysis")
+builder.add_edge("sentiment_analysis_sensitive_tools", "sentiment_analysis")
+builder.add_conditional_edges("sentiment_analysis", route_sentiment_analysis)
+
 # Primary Assistant
 builder.add_node("primary_assistant", primary_assistant)
 builder.add_node(
@@ -218,10 +218,10 @@ builder.add_edge("fetch_user_info", "primary_assistant")
 
 def route_primary_assistant(state: State) -> Literal[
   "primary_assistant_tools",
-  "enter_update_flight",
+  "enter_social_engagement",
   "enter_token_info",
-  "enter_book_hotel",
   "enter_market_insights",
+  "enter_sentiment_analysis",
   "__end__",
 ]:
   route = tools_condition(state)
@@ -230,14 +230,14 @@ def route_primary_assistant(state: State) -> Literal[
   tool_calls = state["messages"][-1].tool_calls
   if tool_calls:
       tool_name = tool_calls[0]["name"]
-      if tool_name == ToFlightBookingAssistant.__name__:
-          return "enter_update_flight"
+      if tool_name == ToSocialEngagementAssistant.__name__:
+          return "enter_social_engagement"
       elif tool_name == ToTokenInfoAssistant.__name__:
           return "enter_token_info"
-      elif tool_name == ToHotelBookingAssistant.__name__:
-          return "enter_book_hotel"
       elif tool_name == ToMarketInsightsAssistant.__name__:
           return "enter_market_insights"
+      elif tool_name == ToSentimentAnalysisAssistant.__name__:
+          return "enter_sentiment_analysis"
       else:
           return "primary_assistant_tools"
   return "primary_assistant"
@@ -246,11 +246,11 @@ builder.add_conditional_edges(
   "primary_assistant",
   route_primary_assistant,
   {
-      "enter_update_flight": "enter_update_flight",
-      "enter_token_info": "enter_token_info",
-      "enter_book_hotel": "enter_book_hotel",
-      "enter_market_insights": "enter_market_insights",
       "primary_assistant_tools": "primary_assistant_tools",
+      "enter_social_engagement": "enter_social_engagement",
+      "enter_token_info": "enter_token_info",
+      "enter_market_insights": "enter_market_insights",
+      "enter_sentiment_analysis": "enter_sentiment_analysis",
       END: END,
   },
 )
@@ -258,10 +258,10 @@ builder.add_edge("primary_assistant_tools", "primary_assistant")
 
 # Compile the graph with interrupts
 interrupt_nodes = [
-  "update_flight_sensitive_tools",
+  "social_engagement_sensitive_tools",
   "token_info_sensitive_tools",
-  "book_hotel_sensitive_tools",
   "market_insights_sensitive_tools",
+  "sentiment_analysis_sensitive_tools",
 ]
 
 memory = MemorySaver()

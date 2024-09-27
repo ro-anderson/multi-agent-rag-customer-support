@@ -18,7 +18,7 @@ class State(TypedDict):
             Literal[
                 "assistant",
                 "update_flight",
-                "book_hotel",
+                "get_sa",
                 "get_token_info",
                 "get_news",
                 "get_summary",

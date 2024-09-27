@@ -1,7 +1,6 @@
 from datetime import datetime
 from langchain_core.prompts import ChatPromptTemplate
 from customer_support_chat.app.services.tools import (
-    search_flights,
     lookup_policy,
 )
 from langchain_community.tools.ddg_search.tool import DuckDuckGoSearchResults
@@ -13,25 +12,24 @@ import yaml
 from pathlib import Path
 
 # Define task delegation tools
-class ToFlightBookingAssistant(BaseModel):
-    """Transfers work to a specialized assistant to handle flight updates and cancellations."""
-    request: str = Field(description="Any necessary follow-up questions the update flight assistant should clarify before proceeding.")
+class ToSocialEngagementAssistant(BaseModel):
+    """Transfers work to a specialized assistant to handle social engagement and performance analysis for crypto projects."""
+    ticker: str = Field(description="The ticker or symbol of the cryptocurrency token.")
+    request: str = Field(description="Any additional information or specific queries about the token's social engagement and performance.")
 
 class ToTokenInfoAssistant(BaseModel):
     """Transfers work to a specialized assistant to handle token information queries."""
     ticker: str = Field(description="The ticker or symbol of the cryptocurrency token.")
     request: str = Field(description="Any additional information or specific queries about the token.")
 
-class ToHotelBookingAssistant(BaseModel):
-    """Transfers work to a specialized assistant to handle hotel bookings."""
-    location: str = Field(description="The location where the user wants to book a hotel.")
-    checkin_date: str = Field(description="The check-in date for the hotel.")
-    checkout_date: str = Field(description="The check-out date for the hotel.")
-    request: str = Field(description="Any additional information or requests from the user regarding the hotel booking.")
-
 class ToMarketInsightsAssistant(BaseModel):
     """Transfers work to a specialized assistant to handle market insights and news related to the crypto market."""
     query: str = Field(description="The user's query about market insights or crypto news.")
+    specific_token: Optional[str] = Field(default=None, description="The specific cryptocurrency token the user is interested in, if any.")
+
+class ToSentimentAnalysisAssistant(BaseModel):
+    """Transfers work to a specialized assistant to handle sentiment analysis related to the crypto market."""
+    query: str = Field(description="The user's query about sentiment analysis or market mood.")
     specific_token: Optional[str] = Field(default=None, description="The specific cryptocurrency token the user is interested in, if any.")
 
 # Load the system prompt from the YAML file
@@ -53,12 +51,11 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
 # Primary assistant tools
 primary_assistant_tools = [
     DuckDuckGoSearchResults(max_results=10),
-    search_flights,
     lookup_policy,
-    ToFlightBookingAssistant,
+    ToSocialEngagementAssistant,
     ToTokenInfoAssistant,
-    ToHotelBookingAssistant,
     ToMarketInsightsAssistant,
+    ToSentimentAnalysisAssistant,
 ]
 
 # Create the primary assistant runnable
