@@ -16,8 +16,12 @@ from tqdm.asyncio import tqdm_asyncio
 from more_itertools import chunked
 import time
 
-settings = get_settings()
+import vertexai
+from vertexai.language_models import TextEmbeddingModel
 
+from customer_support_chat.connectors.vertex_ai_connector import VertexAIConnector
+
+settings = get_settings()
 class VectorDB:
     def __init__(self, table_name, collection_name, create_collection=False):
         self.table_name = table_name
@@ -36,10 +40,9 @@ class VectorDB:
             self.client.delete_collection(collection_name=self.collection_name)
         self.client.create_collection(
             collection_name=self.collection_name,
-            vectors_config=VectorParams(size=1536, distance=Distance.COSINE)
+            vectors_config=VectorParams(size=768, distance=Distance.COSINE)
         )
         logger.info(f"Created collection: {self.collection_name}")
-
     def format_content(self, data, collection_name):
         # Implement formatting logic for different collections
         if collection_name == 'car_rentals_collection':
@@ -61,7 +64,6 @@ class VectorDB:
                 f"was scheduled to depart at {data['scheduled_departure']} and arrive at {data['scheduled_arrival']}. " +\
                     f"The actual departure was at {data['actual_departure']} and the actual arrival was at {data['actual_arrival']}. " +\
                         f"Currently, the flight status is '{data['status']}' and it was operated with aircraft code {data['aircraft_code']}."
-
         elif collection_name == 'hotels_collection':
             booking_status = "booked" if data['booked'] else "not booked"
             return f"Hotel {data['name']} located in {data['location']} is categorized as {data['price_tier']} tier. " +\
@@ -72,22 +74,18 @@ class VectorDB:
             return data['page_content']  # Return the page content directly for FAQ
         else:
             return str(data)
-
     async def generate_embedding_async(self, content, session):
         max_retries = 5
         base_delay = 1
+        vertex_ai_connector = VertexAIConnector()
         for attempt in range(max_retries):
             try:
-                async with session.post(
-                    "https://api.openai.com/v1/embeddings",
-                    headers={"Authorization": f"Bearer {settings.OPENAI_API_KEY}"},
-                    json={"model": "text-embedding-ada-002", "input": content}
-                ) as response:
-                    result = await response.json()
-                    if "data" in result and len(result["data"]) > 0:
-                        return result["data"][0]["embedding"]
-                    else:
-                        raise ValueError(f"Unexpected API response: {result}")
+                credentials = vertex_ai_connector.get_credentials()
+                project_id = settings.GOOGLE_APPLICATION_CREDENTIALS[settings.GOOGLE_CREDENTIALS_TYPE].get('project_id')
+                
+                model = TextEmbeddingModel.from_pretrained("text-embedding-004")
+                embeddings = model.get_embeddings([content])
+                return embeddings[0].values
             except Exception as e:
                 if attempt == max_retries - 1:
                     logger.error(f"Failed to generate embedding after {max_retries} attempts: {str(e)}")
@@ -106,13 +104,11 @@ class VectorDB:
                 **metadata
             }
         )
-
     async def create_embeddings_async(self):
         if self.table_name == "faq":
             await self.index_faq_docs()
         else:
             await self.index_regular_docs()
-
     async def index_regular_docs(self):
         db_connection = sqlite3.connect(settings.SQLITE_DB_PATH)
         cursor = db_connection.cursor()
@@ -160,14 +156,12 @@ class VectorDB:
                 if i + batch_size < len(chunks):
                     logger.info(f"Waiting for {delay} seconds before processing the next batch...")
                     await asyncio.sleep(delay)
-
         total_indexed = sum(1 for chunk in chunks if chunk is not None)
         logger.info(f"Finished indexing. Total documents indexed into {self.collection_name}: {total_indexed}")
-
     async def index_faq_docs(self):
         faq_url = "https://storage.googleapis.com/benchmarks-artifacts/travel-db/swiss_faq.md"
         async with aiohttp.ClientSession() as session:
-            async with session.get(faq_url) as response:
+            async with session.get(faq_url, ssl=False) as response:  # Disable SSL verification
                 faq_text = await response.text()
 
         docs = [{"page_content": txt.strip()} for txt in re.split(r"(?=\n##)", faq_text) if txt.strip()]
@@ -190,15 +184,16 @@ class VectorDB:
         asyncio.run(self.create_embeddings_async())
 
     def search(self, query, limit=2, with_payload=True):
-        query_vector = generate_embedding(query)
+        vertex_ai_connector = VertexAIConnector()
+        credentials = vertex_ai_connector.get_credentials()
+        project_id = settings.GOOGLE_APPLICATION_CREDENTIALS[settings.GOOGLE_CREDENTIALS_TYPE].get('project_id')
+        
+        model = TextEmbeddingModel.from_pretrained("text-embedding-004")
+        query_embedding = model.get_embeddings([query])[0].values
         search_result = self.client.search(
             collection_name=self.collection_name,
-            query_vector=query_vector,
+            query_vector=query_embedding,
             limit=limit,
             with_payload=with_payload
         )
         return search_result
-
-if __name__ == "__main__":
-    vectordb = VectorDB("example_table", "example_collection")
-    vectordb.create_embeddings()

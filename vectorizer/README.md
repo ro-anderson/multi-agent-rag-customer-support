@@ -1,4 +1,3 @@
-
 # Vectorizer Module
 
 This module is responsible for handling embeddings and vector database operations. The following sections outline the main components of the module, which was designed with flexibility in mind, utilizing design patterns to allow easy adaptation to various vector databases. The architecture enables straightforward integration of different database solutions, ensuring scalability and maintainability. By abstracting the embedding generation and document indexing logic, this module can be seamlessly extended or modified to suit specific use cases or database backends without changing the core functionality.

@@ -17,6 +17,7 @@ def create_collections():
         try:
             logger.info(f"Starting the vector database service for {table_name}")
             vectordb = VectorDB(table_name=table_name, collection_name=collection_name, create_collection=True)
+            vectordb.create_or_clear_collection()  # Explicitly recreate the collection
             vectordb.create_embeddings()
             logger.info(f"Embedding generation and storage completed for {collection_name}")
         except Exception as e:
