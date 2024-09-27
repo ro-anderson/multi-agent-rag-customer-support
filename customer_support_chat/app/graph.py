@@ -21,8 +21,8 @@ from customer_support_chat.app.services.assistants.primary_assistant import (
   primary_assistant_tools,
   ToFlightBookingAssistant,
   ToHotelBookingAssistant,
-  ToBookExcursion,
   ToTokenInfoAssistant,
+  ToMarketInsightsAssistant,
 )
 from customer_support_chat.app.services.assistants.flight_booking_assistant import (
   flight_booking_assistant,
@@ -39,10 +39,10 @@ from customer_support_chat.app.services.assistants.hotel_booking_assistant impor
   book_hotel_safe_tools,
   book_hotel_sensitive_tools,
 )
-from customer_support_chat.app.services.assistants.excursion_assistant import (
-  excursion_assistant,
-  book_excursion_safe_tools,
-  book_excursion_sensitive_tools,
+from customer_support_chat.app.services.assistants.market_insights_assistant import (
+  market_insights_assistant,
+  market_insights_safe_tools,
+  market_insights_sensitive_tools,
 )
 
 # Initialize the graph
@@ -171,25 +171,25 @@ builder.add_edge("book_hotel_safe_tools", "book_hotel")
 builder.add_edge("book_hotel_sensitive_tools", "book_hotel")
 builder.add_conditional_edges("book_hotel", route_book_hotel)
 
-# Excursion Assistant
+# Market Insights Assistant
 builder.add_node(
-  "enter_book_excursion",
-  create_entry_node("Trip Recommendation Assistant", "book_excursion"),
+  "enter_market_insights",
+  create_entry_node("Market Insights Assistant", "market_insights"),
 )
-builder.add_node("book_excursion", excursion_assistant)
-builder.add_edge("enter_book_excursion", "book_excursion")
+builder.add_node("market_insights", market_insights_assistant)
+builder.add_edge("enter_market_insights", "market_insights")
 builder.add_node(
-  "book_excursion_safe_tools",
-  create_tool_node_with_fallback(book_excursion_safe_tools),
+  "market_insights_safe_tools",
+  create_tool_node_with_fallback(market_insights_safe_tools),
 )
 builder.add_node(
-  "book_excursion_sensitive_tools",
-  create_tool_node_with_fallback(book_excursion_sensitive_tools),
+  "market_insights_sensitive_tools",
+  create_tool_node_with_fallback(market_insights_sensitive_tools),
 )
 
-def route_book_excursion(state: State) -> Literal[
-  "book_excursion_safe_tools",
-  "book_excursion_sensitive_tools",
+def route_market_insights(state: State) -> Literal[
+  "market_insights_safe_tools",
+  "market_insights_sensitive_tools",
   "primary_assistant",
   "__end__",
 ]:
@@ -200,14 +200,14 @@ def route_book_excursion(state: State) -> Literal[
   did_cancel = any(tc["name"] == CompleteOrEscalate.__name__ for tc in tool_calls)
   if did_cancel:
       return "primary_assistant"
-  safe_toolnames = [t.name for t in book_excursion_safe_tools]
+  safe_toolnames = [t.name for t in market_insights_safe_tools]
   if all(tc["name"] in safe_toolnames for tc in tool_calls):
-      return "book_excursion_safe_tools"
-  return "book_excursion_sensitive_tools"
+      return "market_insights_safe_tools"
+  return "market_insights_sensitive_tools"
 
-builder.add_edge("book_excursion_safe_tools", "book_excursion")
-builder.add_edge("book_excursion_sensitive_tools", "book_excursion")
-builder.add_conditional_edges("book_excursion", route_book_excursion)
+builder.add_edge("market_insights_safe_tools", "market_insights")
+builder.add_edge("market_insights_sensitive_tools", "market_insights")
+builder.add_conditional_edges("market_insights", route_market_insights)
 
 # Primary Assistant
 builder.add_node("primary_assistant", primary_assistant)
@@ -221,7 +221,7 @@ def route_primary_assistant(state: State) -> Literal[
   "enter_update_flight",
   "enter_token_info",
   "enter_book_hotel",
-  "enter_book_excursion",
+  "enter_market_insights",
   "__end__",
 ]:
   route = tools_condition(state)
@@ -236,8 +236,8 @@ def route_primary_assistant(state: State) -> Literal[
           return "enter_token_info"
       elif tool_name == ToHotelBookingAssistant.__name__:
           return "enter_book_hotel"
-      elif tool_name == ToBookExcursion.__name__:
-          return "enter_book_excursion"
+      elif tool_name == ToMarketInsightsAssistant.__name__:
+          return "enter_market_insights"
       else:
           return "primary_assistant_tools"
   return "primary_assistant"
@@ -249,7 +249,7 @@ builder.add_conditional_edges(
       "enter_update_flight": "enter_update_flight",
       "enter_token_info": "enter_token_info",
       "enter_book_hotel": "enter_book_hotel",
-      "enter_book_excursion": "enter_book_excursion",
+      "enter_market_insights": "enter_market_insights",
       "primary_assistant_tools": "primary_assistant_tools",
       END: END,
   },
@@ -261,7 +261,7 @@ interrupt_nodes = [
   "update_flight_sensitive_tools",
   "token_info_sensitive_tools",
   "book_hotel_sensitive_tools",
-  "book_excursion_sensitive_tools",
+  "market_insights_sensitive_tools",
 ]
 
 memory = MemorySaver()

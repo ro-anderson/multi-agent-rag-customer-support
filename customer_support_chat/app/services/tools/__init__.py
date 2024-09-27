@@ -16,11 +16,8 @@ from .hotels import (
     update_hotel,
     cancel_hotel,
 )
-from .excursions import (
-    search_trip_recommendations,
-    book_excursion,
-    update_excursion,
-    cancel_excursion,
+from .market_insights import (
+    get_news
 )
 
 __all__ = [
@@ -35,7 +32,6 @@ __all__ = [
     "update_hotel",
     "cancel_hotel",
     "search_trip_recommendations",
-    "book_excursion",
-    "update_excursion",
-    "cancel_excursion",
+    "get_summary",
+    "get_news",
 ]

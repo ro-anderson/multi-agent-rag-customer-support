@@ -19,7 +19,9 @@ class State(TypedDict):
                 "assistant",
                 "update_flight",
                 "book_hotel",
-                "book_excursion",
+                "get_token_info",
+                "get_news",
+                "get_summary",
             ]
         ],
         update_dialog_stack,

@@ -4,8 +4,8 @@ from .primary_assistant import (
     primary_assistant_tools,
     ToFlightBookingAssistant,
     ToHotelBookingAssistant,
-    ToBookExcursion,
     ToTokenInfoAssistant,
+    ToMarketInsightsAssistant,
 )
 from .flight_booking_assistant import (
     flight_booking_assistant,
@@ -17,10 +17,10 @@ from .hotel_booking_assistant import (
     book_hotel_safe_tools,
     book_hotel_sensitive_tools,
 )
-from .excursion_assistant import (
-    excursion_assistant,
-    book_excursion_safe_tools,
-    book_excursion_sensitive_tools,
+from .market_insights_assistant import (
+    market_insights_assistant,
+    market_insights_safe_tools,
+    market_insights_sensitive_tools,
 )
 from .token_info_assistant import (
     token_info_assistant,
