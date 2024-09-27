@@ -16,12 +16,10 @@ class ToFlightBookingAssistant(BaseModel):
     """Transfers work to a specialized assistant to handle flight updates and cancellations."""
     request: str = Field(description="Any necessary follow-up questions the update flight assistant should clarify before proceeding.")
 
-class ToBookCarRental(BaseModel):
-    """Transfers work to a specialized assistant to handle car rental bookings."""
-    location: str = Field(description="The location where the user wants to rent a car.")
-    start_date: str = Field(description="The start date of the car rental.")
-    end_date: str = Field(description="The end date of the car rental.")
-    request: str = Field(description="Any additional information or requests from the user regarding the car rental.")
+class ToTokenInfoAssistant(BaseModel):
+    """Transfers work to a specialized assistant to handle token information queries."""
+    ticker: str = Field(description="The ticker or symbol of the cryptocurrency token.")
+    request: str = Field(description="Any additional information or specific queries about the token.")
 
 class ToHotelBookingAssistant(BaseModel):
     """Transfers work to a specialized assistant to handle hotel bookings."""
@@ -57,7 +55,7 @@ primary_assistant_tools = [
     search_flights,
     lookup_policy,
     ToFlightBookingAssistant,
-    ToBookCarRental,
+    ToTokenInfoAssistant,
     ToHotelBookingAssistant,
     ToBookExcursion,
 ]

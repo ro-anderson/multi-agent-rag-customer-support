@@ -20,19 +20,19 @@ from customer_support_chat.app.services.assistants.primary_assistant import (
   primary_assistant,
   primary_assistant_tools,
   ToFlightBookingAssistant,
-  ToBookCarRental,
   ToHotelBookingAssistant,
   ToBookExcursion,
+  ToTokenInfoAssistant,
 )
 from customer_support_chat.app.services.assistants.flight_booking_assistant import (
   flight_booking_assistant,
   update_flight_safe_tools,
   update_flight_sensitive_tools,
 )
-from customer_support_chat.app.services.assistants.car_rental_assistant import (
-  car_rental_assistant,
-  book_car_rental_safe_tools,
-  book_car_rental_sensitive_tools,
+from customer_support_chat.app.services.assistants.token_info_assistant import (
+  token_info_assistant,
+  token_info_safe_tools,
+  token_info_sensitive_tools,
 )
 from customer_support_chat.app.services.assistants.hotel_booking_assistant import (
   hotel_booking_assistant,
@@ -95,25 +95,25 @@ builder.add_edge("update_flight_safe_tools", "update_flight")
 builder.add_edge("update_flight_sensitive_tools", "update_flight")
 builder.add_conditional_edges("update_flight", route_update_flight)
 
-# Car Rental Assistant
+# Token Info Assistant
 builder.add_node(
-  "enter_book_car_rental",
-  create_entry_node("Car Rental Assistant", "book_car_rental"),
+  "enter_token_info",
+  create_entry_node("Token Information Assistant", "token_info"),
 )
-builder.add_node("book_car_rental", car_rental_assistant)
-builder.add_edge("enter_book_car_rental", "book_car_rental")
+builder.add_node("token_info", token_info_assistant)
+builder.add_edge("enter_token_info", "token_info")
 builder.add_node(
-  "book_car_rental_safe_tools",
-  create_tool_node_with_fallback(book_car_rental_safe_tools),
+  "token_info_safe_tools",
+  create_tool_node_with_fallback(token_info_safe_tools),
 )
 builder.add_node(
-  "book_car_rental_sensitive_tools",
-  create_tool_node_with_fallback(book_car_rental_sensitive_tools),
+  "token_info_sensitive_tools",
+  create_tool_node_with_fallback(token_info_sensitive_tools),
 )
 
-def route_book_car_rental(state: State) -> Literal[
-  "book_car_rental_safe_tools",
-  "book_car_rental_sensitive_tools",
+def route_token_info(state: State) -> Literal[
+  "token_info_safe_tools",
+  "token_info_sensitive_tools",
   "primary_assistant",
   "__end__",
 ]:
@@ -124,14 +124,14 @@ def route_book_car_rental(state: State) -> Literal[
   did_cancel = any(tc["name"] == CompleteOrEscalate.__name__ for tc in tool_calls)
   if did_cancel:
       return "primary_assistant"
-  safe_toolnames = [t.name for t in book_car_rental_safe_tools]
+  safe_toolnames = [t.name for t in token_info_safe_tools]
   if all(tc["name"] in safe_toolnames for tc in tool_calls):
-      return "book_car_rental_safe_tools"
-  return "book_car_rental_sensitive_tools"
+      return "token_info_safe_tools"
+  return "token_info_sensitive_tools"
 
-builder.add_edge("book_car_rental_safe_tools", "book_car_rental")
-builder.add_edge("book_car_rental_sensitive_tools", "book_car_rental")
-builder.add_conditional_edges("book_car_rental", route_book_car_rental)
+builder.add_edge("token_info_safe_tools", "token_info")
+builder.add_edge("token_info_sensitive_tools", "token_info")
+builder.add_conditional_edges("token_info", route_token_info)
 
 # Hotel Booking Assistant
 builder.add_node(
@@ -219,7 +219,7 @@ builder.add_edge("fetch_user_info", "primary_assistant")
 def route_primary_assistant(state: State) -> Literal[
   "primary_assistant_tools",
   "enter_update_flight",
-  "enter_book_car_rental",
+  "enter_token_info",
   "enter_book_hotel",
   "enter_book_excursion",
   "__end__",
@@ -232,8 +232,8 @@ def route_primary_assistant(state: State) -> Literal[
       tool_name = tool_calls[0]["name"]
       if tool_name == ToFlightBookingAssistant.__name__:
           return "enter_update_flight"
-      elif tool_name == ToBookCarRental.__name__:
-          return "enter_book_car_rental"
+      elif tool_name == ToTokenInfoAssistant.__name__:
+          return "enter_token_info"
       elif tool_name == ToHotelBookingAssistant.__name__:
           return "enter_book_hotel"
       elif tool_name == ToBookExcursion.__name__:
@@ -247,7 +247,7 @@ builder.add_conditional_edges(
   route_primary_assistant,
   {
       "enter_update_flight": "enter_update_flight",
-      "enter_book_car_rental": "enter_book_car_rental",
+      "enter_token_info": "enter_token_info",
       "enter_book_hotel": "enter_book_hotel",
       "enter_book_excursion": "enter_book_excursion",
       "primary_assistant_tools": "primary_assistant_tools",
@@ -259,7 +259,7 @@ builder.add_edge("primary_assistant_tools", "primary_assistant")
 # Compile the graph with interrupts
 interrupt_nodes = [
   "update_flight_sensitive_tools",
-  "book_car_rental_sensitive_tools",
+  "token_info_sensitive_tools",
   "book_hotel_sensitive_tools",
   "book_excursion_sensitive_tools",
 ]
