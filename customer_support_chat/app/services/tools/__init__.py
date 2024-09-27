@@ -7,11 +7,8 @@ from .flights import (
     update_ticket_to_new_flight,
     cancel_ticket,
 )
-from .cars import (
-    search_car_rentals,
-    book_car_rental,
-    update_car_rental,
-    cancel_car_rental,
+from .token_info import (
+    get_summary
 )
 from .hotels import (
     search_hotels,
@@ -33,10 +30,6 @@ __all__ = [
     "search_flights",
     "update_ticket_to_new_flight",
     "cancel_ticket",
-    "search_car_rentals",
-    "book_car_rental",
-    "update_car_rental",
-    "cancel_car_rental",
     "search_hotels",
     "book_hotel",
     "update_hotel",
